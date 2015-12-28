@@ -160,14 +160,14 @@ def make_hand_data_file(file_name):
     left_hand_train_sample_size = int(len(left_hand_angles_scaled) * 0.9)
     right_hand_train_sample_size = int(len(right_hand_angles_scaled) * 0.9)
     # Write to training file
-    file = open(file_name + ".train", 'w', encoding='utf-8')
+    file = open("training/" + file_name + ".train", 'w', encoding='utf-8')
     for i in range(left_hand_train_sample_size):
         file.write("-1 1:" + str(left_hand_angles_scaled[i]) + '\n')
     for i in range(right_hand_train_sample_size):
         file.write("+1 1:" + str(right_hand_angles_scaled[i]) + '\n')
     file.close()
     # Write to testing file
-    file = open(file_name + ".test", 'w', encoding='utf-8')
+    file = open("training/" + file_name + ".test", 'w', encoding='utf-8')
     for i in range(left_hand_train_sample_size, len(left_hand_angles_scaled)):
         file.write("-1 1:" + str(left_hand_angles_scaled[i]) + '\n')
     for i in range(right_hand_train_sample_size, len(right_hand_angles_scaled)):
