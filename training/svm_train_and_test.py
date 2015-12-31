@@ -2,9 +2,17 @@ import subprocess
 
 
 # Hand position training and testing
-training_process = subprocess.run(['svm-train.exe', 'hand_2p.train'],
-                                  stdout=subprocess.PIPE)
-testing_process = subprocess.run(['svm-predict.exe', 'hand_2p.test',
-                                  'hand_2p.train.model', 'hand_2p.output'],
+scaling_process = subprocess.run(['svm-scale.exe', '-s',
+                                  'range', 'hand_2p_unscaled.train', '>',
+                                  'hand_2p_scaled.train'],
+                                 shell=True,  # Necessary for the > operator
                                  stdout=subprocess.PIPE)
-print(testing_process.stdout)
+
+training_process = subprocess.run(['svm-train.exe',
+                                   '-v', '10',  # 10 fold cross validation
+                                   '-g', '10',  # Gamma in kernel function
+                                   '-c', '10',  # Cost
+                                   'hand_2p_scaled.train'],
+                                  stdout=subprocess.PIPE)
+
+print(training_process.stdout.decode('utf-8'))

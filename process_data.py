@@ -1,7 +1,14 @@
-import json
 import os
 import math
 import random
+
+
+def extract_positive_samples():
+    pass
+
+
+def extract_negative_samples():
+    pass
 
 
 def process_2p_left_hand_lin_acc():
@@ -121,7 +128,7 @@ def get_angle(log_line):
     return math.atan2(y_value, x_value)
 
 
-def make_hand_data_file(file_name):
+def make_hand_data_unscaled(file_name):
     """
     Creates the left/right hand training/testing file in the format:
     <hand[-1 for left, +1 for right]> <index1>:<angle at max magnitude> ...
@@ -144,35 +151,49 @@ def make_hand_data_file(file_name):
     for tap_position in rhand_highest_log_lines:
         for log_line in tap_position:
             right_hand_angles.append(get_angle(log_line))
-    # Scale to [-1,1]
-    max_angle = max(left_hand_angles + right_hand_angles)
-    min_angle = min(left_hand_angles + right_hand_angles)
-    left_hand_angles_scaled = [2 * (angle - min_angle) /
-                               (max_angle - min_angle) -
-                               1 for angle in left_hand_angles]
-    right_hand_angles_scaled = [2 * (angle - min_angle) /
-                                (max_angle - min_angle) -
-                                1 for angle in right_hand_angles]
-    # Shuffling done in place
-    random.shuffle(left_hand_angles_scaled)
-    random.shuffle(right_hand_angles_scaled)
-    # Get sample sizes for left and right hand testing and training data
-    left_hand_train_sample_size = int(len(left_hand_angles_scaled) * 0.9)
-    right_hand_train_sample_size = int(len(right_hand_angles_scaled) * 0.9)
+
+    # Shuffling?
+    random.shuffle(left_hand_angles)
+    random.shuffle(right_hand_angles)
+
     # Write to training file
     file = open("training/" + file_name + ".train", 'w', encoding='utf-8')
-    for i in range(left_hand_train_sample_size):
-        file.write("-1 1:" + str(left_hand_angles_scaled[i]) + '\n')
-    for i in range(right_hand_train_sample_size):
-        file.write("+1 1:" + str(right_hand_angles_scaled[i]) + '\n')
-    file.close()
-    # Write to testing file
-    file = open("training/" + file_name + ".test", 'w', encoding='utf-8')
-    for i in range(left_hand_train_sample_size, len(left_hand_angles_scaled)):
-        file.write("-1 1:" + str(left_hand_angles_scaled[i]) + '\n')
-    for i in range(right_hand_train_sample_size, len(right_hand_angles_scaled)):
-        file.write("+1 1:" + str(right_hand_angles_scaled[i]) + '\n')
+    for angle_sample in left_hand_angles:
+        file.write("-1 1:" + str(angle_sample) + '\n')
+    for angle_sample in right_hand_angles:
+        file.write("+1 1:" + str(angle_sample) + '\n')
     file.close()
 
+    # # Scale to [-1,1]
+    # max_angle = max(left_hand_angles + right_hand_angles)
+    # min_angle = min(left_hand_angles + right_hand_angles)
+    # left_hand_angles_scaled = [2 * (angle - min_angle) /
+    #                            (max_angle - min_angle) -
+    #                            1 for angle in left_hand_angles]
+    # right_hand_angles_scaled = [2 * (angle - min_angle) /
+    #                             (max_angle - min_angle) -
+    #                             1 for angle in right_hand_angles]
+    # # Shuffling done in place
+    # random.shuffle(left_hand_angles_scaled)
+    # random.shuffle(right_hand_angles_scaled)
+    # # Get sample sizes for left and right hand testing and training data
+    # left_hand_train_sample_size = int(len(left_hand_angles_scaled) * 0.9)
+    # right_hand_train_sample_size = int(len(right_hand_angles_scaled) * 0.9)
+    # # Write to training file
+    # file = open("training/" + file_name + ".train", 'w', encoding='utf-8')
+    # for i in range(left_hand_train_sample_size):
+    #     file.write("-1 1:" + str(left_hand_angles_scaled[i]) + '\n')
+    # for i in range(right_hand_train_sample_size):
+    #     file.write("+1 1:" + str(right_hand_angles_scaled[i]) + '\n')
+    # file.close()
+    # # Write to testing file
+    # file = open("training/" + file_name + ".test", 'w', encoding='utf-8')
+    # for i in range(left_hand_train_sample_size, len(left_hand_angles_scaled)):
+    #     file.write("-1 1:" + str(left_hand_angles_scaled[i]) + '\n')
+    # for i in range(right_hand_train_sample_size,
+    #                len(right_hand_angles_scaled)):
+    #     file.write("+1 1:" + str(right_hand_angles_scaled[i]) + '\n')
+    # file.close()
 
-make_hand_data_file("hand_2p")
+
+make_hand_data_unscaled("hand_2p_unscaled")
