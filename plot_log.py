@@ -1,24 +1,23 @@
 import os
+import datetime
 from matplotlib import pyplot
 
-
-# pyplot.plot([1,2,3],[1,4,9], 'o')  # Vectors are x,y
-# pyplot.axis([-1,10,-1,20])  # Vector is xmin, xmax, ymin, ymax
-# pyplot.ylabel("Some numbers")
-# pyplot.show()
 
 log_dir = os.path.join('logs', '2_points', 'left_hand', 'lin_acc')
 file_names = os.listdir(log_dir)  # list of strings, '1', '2', etc
 
-with open(os.path.join(log_dir, file_names[2])) as file:
+with open(os.path.join(log_dir, file_names[6])) as file:
     content = file.read()
     split_lines = content.splitlines()
     x_acc_values = []
     timestamps = []
+    readable_timestamps = []
     for i in range(102):
         if int(split_lines[i].split(",")[1]) == 1:
             x_acc_values.append(float(split_lines[i].split(",")[2]))
             timestamps.append(int(split_lines[i].split(",")[0]))
+    print("Max acceleration: " + str(max(x_acc_values, key=abs)))
+    [readable_timestamps.append(datetime.timedelta(milliseconds=timestamp)) for
+     timestamp in timestamps]
     pyplot.plot(timestamps, x_acc_values, 'o')
     pyplot.show()
-
