@@ -3,10 +3,10 @@ import datetime
 from matplotlib import pyplot
 
 
-log_dir = os.path.join('logs', '2_points', 'left_hand', 'lin_acc')
+log_dir = os.path.join('logs', '5_points', 'left_hand', 'lin_acc')
 file_names = os.listdir(log_dir)  # list of strings, '1', '2', etc
 
-with open(os.path.join(log_dir, file_names[6])) as file:
+with open(os.path.join(log_dir, file_names[4])) as file:
     content = file.read()
     split_lines = content.splitlines()
     x_acc_values = []
