@@ -5,18 +5,26 @@ import statistics
 import pprint
 
 
-def get_left_hand_positive_tap_samples():
+left = "left"
+right = "right"
+
+
+def get_positive_tap_samples(hand):
     """
     Returns lists of sensor values corresponding to a 300ms window containing
     the largest absolute acceleration value from each tap.
     :return: A list of positive samples for each tap point. Each positive sample
-    contains 30 data points starting from the moment the highest x-y L2-norm
-    values are captured.
+    contains 15 data points (15 * 20ms = 300ms) starting from the moment the
+    highest x-y L2-norm values are captured.
     """
     # Get sensor data for all tap locations
-    raw_logs = process_logs.process_5p_left_hand_lin_acc()
+    if hand == left:
+        raw_logs = process_logs.process_5p_left_hand_lin_acc()
+    elif hand == right:
+        raw_logs = process_logs.process_5p_right_hand_lin_acc()
+    else:
+        print("Please use a valid hand position")
     positive_samples = []
-    # Get indices of all the highest sensor magnitude log entries.
     for tap_number in range(len(raw_logs)):  # Tap locations 0 - 4
         current_location_log = raw_logs[tap_number]
         if tap_number == len(raw_logs) - 1:  # Next point is 0 if current is 4
@@ -28,6 +36,7 @@ def get_left_hand_positive_tap_samples():
         highest_log_indices = []
         max_magnitude_lines = get_highest_lines(current_location_log)
 
+        # Get indices of all the highest sensor magnitude log entries.
         for line in max_magnitude_lines:
             # for data_window in current_location_log:
             #     if line in data_window:
@@ -36,7 +45,7 @@ def get_left_hand_positive_tap_samples():
              data_window in current_location_log if line in data_window]
 
         # Get positive samples as highest value log + the next 29 log entries
-        last_entry_indices = [index + 30 for index in highest_log_indices]
+        last_entry_indices = [index + 15 for index in highest_log_indices]
         # For each data window for current tap location
         for i in range(len(current_location_log)):
             # If the positive sample requirement exceeds the data window
@@ -53,16 +62,51 @@ def get_left_hand_positive_tap_samples():
             else:
                 cur_location_samples.append(current_location_log[i][highest_log_indices[i]:last_entry_indices[i]])
         positive_samples.append(cur_location_samples)
-    # Simple check to ensure each positive sample contains 30 data points.
-    # print(len(positive_samples))
-    # for tap_location in positive_samples:
-    #     print(len(tap_location))
-    #     print(statistics.mean([len(sample) for sample in tap_location]))
+    # Simple check to ensure each positive sample contains 15 data points.
+    print(len(positive_samples))
+    for tap_location in positive_samples:
+        print(len(tap_location))
+        print(statistics.mean([len(sample) for sample in tap_location]))
     return positive_samples
 
 
-def get_negative_tap_samples():
-    pass
+def get_negative_tap_samples(hand):
+    # Get sensor data for all tap locations
+    if hand == left:
+        raw_logs = process_logs.process_5p_left_hand_lin_acc()
+    elif hand == right:
+        raw_logs = process_logs.process_5p_right_hand_lin_acc()
+    else:
+        print("Please use a valid hand position")
+
+    negative_samples = []
+    for tap_number in range(len(raw_logs)):  # Tap locations 0 - 4
+        current_location_log = raw_logs[tap_number]
+        if tap_number == len(raw_logs) - 1:  # Next point is 0 if current is 4
+            next_location_log = raw_logs[0]
+        else:
+            next_location_log = raw_logs[tap_number + 1]
+
+        cur_location_samples = []  # Holds all samples for current tap location
+        highest_log_indices = []
+        max_magnitude_lines = get_highest_lines(current_location_log)
+
+        # Get indices of all the highest sensor magnitude log entries.
+        for line in max_magnitude_lines:
+            # for data_window in current_location_log:
+            #     if line in data_window:
+            #         highest_log_indices.append(data_window.index(line))
+            [highest_log_indices.append(data_window.index(line)) for
+             data_window in current_location_log if line in data_window]
+
+
+        for i in range(len(current_location_log)):
+            # For each data window
+            if highest_log_indices[i] > 20:
+                negative_sample = current_location_log[i][:15]
+            elif highest_log_indices[i] > (len(current_location_log[i]) - 15):
+                negative_sample = current_location_log
+                pass
 
 
 def get_highest_lines(data_list):
@@ -145,5 +189,5 @@ def make_hand_data_unscaled(file_name):
     file.close()
 
 
-# make_hand_data_unscaled("hand_2p_unscaled")
-get_positive_tap_samples()
+left_hand_psamples = get_positive_tap_samples(left)
+right_hand_psamples = get_positive_tap_samples(right)
