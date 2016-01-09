@@ -457,6 +457,24 @@ def get_negative_tap_samples(sensor, hand):
     return negative_samples
 
 
+def featurize(samples):
+    features = []
+    for tap_location_sample in samples:
+        means = get_sample_mean(tap_location_sample)
+        std_dev = get_sample_std_dev(tap_location_sample)
+        skew = get_sample_skew(tap_location_sample)
+        kurtosis = get_sample_kurtosis(tap_location_sample)
+        l1_norm = get_l1_norm(tap_location_sample)
+        inf_norm = get_inf_norm(tap_location_sample)
+        fro_norm = get_fro_norm(tap_location_sample)
+        for i in range(len(means)):
+            features.append(
+                means[i] + std_dev[i] + skew[i] + kurtosis[i] +
+                [l1_norm[i], inf_norm[i], fro_norm[i]]
+            )
+    return features
+
+
 def make_tap_occurrence_data_unscaled(file_name):
     """
     Creates the data file for tap occurrences in the format:
@@ -480,42 +498,41 @@ def make_tap_occurrence_data_unscaled(file_name):
 
     # First do positive linear accelerometer samples
     lin_acc_p_samples = lhand_p_samples_lin_acc + rhand_p_samples_lin_acc
-    lin_acc_p_features = []
-    for tap_location_sample in lin_acc_p_samples:
-        means = get_sample_mean(tap_location_sample)
-        std_dev = get_sample_std_dev(tap_location_sample)
-        skew = get_sample_skew(tap_location_sample)
-        kurtosis = get_sample_kurtosis(tap_location_sample)
-        l1_norm = get_l1_norm(tap_location_sample)
-        inf_norm = get_inf_norm(tap_location_sample)
-        fro_norm = get_fro_norm(tap_location_sample)
-        for i in range(len(means)):
-            lin_acc_p_features.append(
-                means[i] + std_dev[i] + skew[i] + kurtosis[i] +
-                [l1_norm[i], inf_norm[i], fro_norm[i]]
-            )
+    lin_acc_p_features = featurize(lin_acc_p_samples)
     # Add on positive gyroscope samples
-    gyro_p_features = lhand_p_samples_gyro + rhand_p_samples_gyro
-    for tap_location_sample in gyro_p_features:
-        means = get_sample_mean(tap_location_sample)
-        std_dev = get_sample_std_dev(tap_location_sample)
-        skew = get_sample_skew(tap_location_sample)
-        kurtosis = get_sample_kurtosis(tap_location_sample)
-        l1_norm = get_l1_norm(tap_location_sample)
-        inf_norm = get_inf_norm(tap_location_sample)
-        fro_norm = get_fro_norm(tap_location_sample)
-        for i in range(len(means)):
-            gyro_p_features.append(
-                means[i] + std_dev[i] + skew[i] + kurtosis[i] +
-                [l1_norm[i], inf_norm[i], fro_norm[i]]
-            )
-    p_features = [
-        lin_acc_feature + gyro_feature for
-        lin_acc_feature in lin_acc_p_features for
-        gyro_feature in gyro_p_features
-    ]
+    gyro_p_samples = lhand_p_samples_gyro + rhand_p_samples_gyro
+    gyro_p_features = featurize(gyro_p_samples)
 
-    return p_features
+    # Synthesize positive tap features
+    positive_features = []
+    for i in range(len(lin_acc_p_features)):
+        positive_features.append(lin_acc_p_features[i] + gyro_p_features[i])
+
+    # Negative linear accelerometer samples
+    lin_acc_n_samples = lhand_n_samples_lin_acc + rhand_n_samples_lin_acc
+    lin_acc_n_features = featurize(lin_acc_n_samples)
+    # Negative gyro samples
+    gyro_n_samples = lhand_n_samples_gyro + rhand_n_samples_gyro
+    gyro_n_features = featurize(gyro_n_samples)
+
+    # Synthesize negative tap features
+    negative_features = []
+    for i in range(len(lin_acc_n_features)):
+        negative_features.append(lin_acc_n_features[i] + gyro_n_features[i])
+
+    # Now we write to the file.
+    with open(
+            "training/" + file_name + ".train", 'w', encoding='utf-8') as file:
+        for feature_vector in positive_features:
+            file.write("+1 ")
+            for i in range(len(feature_vector)):
+                file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
+            file.write('\n')
+        for feature_vector in negative_features:
+            file.write("-1 ")
+            for i in range(len(feature_vector)):
+                file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
+            file.write('\n')
 
 
 def make_hand_data_unscaled(file_name):
@@ -575,3 +592,4 @@ def make_hand_data_unscaled(file_name):
 # rhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, RIGHT_HAND)
 # gyro_p_samples = lhand_p_samples_gyro + rhand_p_samples_gyro
 # print(len(gyro_p_samples))
+pprint.pprint(make_tap_occurrence_data_unscaled("tap_occurrence_unscaled"))
