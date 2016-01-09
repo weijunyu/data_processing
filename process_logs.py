@@ -168,7 +168,7 @@ def process_5p_right_hand_gyroscope():
     Sorts data logged for the right hand, linear accelerometer, for 5 tap points
     :return: 5 lists containing data windows for each of 5 tap locations.
     """
-    log_dir = os.path.join('logs', '5_points', 'right_hand', 'gyroscope')
+    log_dir = os.path.join('logs', '5_points', 'right_hand', 'gyro')
     file_names = os.listdir(log_dir)  # list of strings, '1', '2', etc
 
     location_1 = []

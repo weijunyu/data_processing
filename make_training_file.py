@@ -118,13 +118,13 @@ def get_sample_mean(tap_location_samples):
         tap_location_means.append(
                 [
                     statistics.mean(
-                        [abs(float(log_line.split(",")[2]) for log_line in sample)]
+                        [abs(float(log_line.split(",")[2])) for log_line in sample]
                     ),
                     statistics.mean(
-                        [abs(float(log_line.split(",")[3]) for log_line in sample)]
+                        [abs(float(log_line.split(",")[3])) for log_line in sample]
                     ),
                     statistics.mean(
-                        [abs(float(log_line.split(",")[4]) for log_line in sample)]
+                        [abs(float(log_line.split(",")[4])) for log_line in sample]
                     ),
                 ]
         )
@@ -471,9 +471,51 @@ def make_tap_occurrence_data_unscaled(file_name):
     rhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
                                                        LEFT_HAND)
     rhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, RIGHT_HAND)
+    lhand_n_samples_lin_acc = get_negative_tap_samples(LINEAR_ACCELEROMETER,
+                                                       LEFT_HAND)
+    lhand_n_samples_gyro = get_negative_tap_samples(GYROSCOPE, LEFT_HAND)
+    rhand_n_samples_lin_acc = get_negative_tap_samples(LINEAR_ACCELEROMETER,
+                                                       LEFT_HAND)
+    rhand_n_samples_gyro = get_negative_tap_samples(GYROSCOPE, RIGHT_HAND)
 
-    
+    # First do positive linear accelerometer samples
+    lin_acc_p_samples = lhand_p_samples_lin_acc + rhand_p_samples_lin_acc
+    lin_acc_p_features = []
+    for tap_location_sample in lin_acc_p_samples:
+        means = get_sample_mean(tap_location_sample)
+        std_dev = get_sample_std_dev(tap_location_sample)
+        skew = get_sample_skew(tap_location_sample)
+        kurtosis = get_sample_kurtosis(tap_location_sample)
+        l1_norm = get_l1_norm(tap_location_sample)
+        inf_norm = get_inf_norm(tap_location_sample)
+        fro_norm = get_fro_norm(tap_location_sample)
+        for i in range(len(means)):
+            lin_acc_p_features.append(
+                means[i] + std_dev[i] + skew[i] + kurtosis[i] +
+                [l1_norm[i], inf_norm[i], fro_norm[i]]
+            )
+    # Add on positive gyroscope samples
+    gyro_p_features = lhand_p_samples_gyro + rhand_p_samples_gyro
+    for tap_location_sample in gyro_p_features:
+        means = get_sample_mean(tap_location_sample)
+        std_dev = get_sample_std_dev(tap_location_sample)
+        skew = get_sample_skew(tap_location_sample)
+        kurtosis = get_sample_kurtosis(tap_location_sample)
+        l1_norm = get_l1_norm(tap_location_sample)
+        inf_norm = get_inf_norm(tap_location_sample)
+        fro_norm = get_fro_norm(tap_location_sample)
+        for i in range(len(means)):
+            gyro_p_features.append(
+                means[i] + std_dev[i] + skew[i] + kurtosis[i] +
+                [l1_norm[i], inf_norm[i], fro_norm[i]]
+            )
+    p_features = [
+        lin_acc_feature + gyro_feature for
+        lin_acc_feature in lin_acc_p_features for
+        gyro_feature in gyro_p_features
+    ]
 
+    return p_features
 
 
 def make_hand_data_unscaled(file_name):
@@ -518,10 +560,18 @@ def make_hand_data_unscaled(file_name):
 
 # lhand_pos_gyro = get_positive_tap_samples(GYROSCOPE, LEFT_HAND)
 # lhand_pos_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER, LEFT_HAND)
-# pprint.pprint(lhand_pos_samples)
-# pprint.pprint(get_sample_kurtosis(lhand_pos_samples[0]))
-# pprint.pprint(get_inf_norm(lhand_pos_samples[0]))
-# pprint.pprint(get_fro_norm(lhand_pos_samples[0]))
-# pprint.pprint(get_pearson_coeff(lhand_pos_lin_acc[0], lhand_pos_gyro[0]))
-# pprint.pprint(get_sample_p2p(lhand_pos_gyro[0]))
-# pprint.pprint(get_peak_value_sign(lhand_pos_gyro[0]))
+# pprint.pprint(len(get_sample_kurtosis(lhand_pos_lin_acc[0])))
+# pprint.pprint(len(get_inf_norm(lhand_pos_gyro[0])))
+# pprint.pprint(len(get_fro_norm(lhand_pos_gyro[0])))
+# pprint.pprint(len(get_pearson_coeff(lhand_pos_lin_acc[0], lhand_pos_gyro[0])))
+# pprint.pprint(len(get_sample_p2p(lhand_pos_gyro[0])))
+# pprint.pprint(len(get_peak_value_sign(lhand_pos_gyro[0])))
+# print(len(make_tap_occurrence_data_unscaled("placeholder")))
+# lhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
+#                                                    LEFT_HAND)
+# lhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, LEFT_HAND)
+# rhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
+#                                                    LEFT_HAND)
+# rhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, RIGHT_HAND)
+# gyro_p_samples = lhand_p_samples_gyro + rhand_p_samples_gyro
+# print(len(gyro_p_samples))
