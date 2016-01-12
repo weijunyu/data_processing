@@ -9,6 +9,7 @@ from scipy import stats
 from numpy import matrix
 from numpy import linalg
 
+
 LEFT_HAND = "left hand"
 RIGHT_HAND = "right hand"
 LINEAR_ACCELEROMETER = "linear accelerometer"
@@ -41,18 +42,26 @@ def get_highest_lines(data_list):
     return max_magnitude_lines
 
 
-def get_angle(log_line):
+def get_angle(tap_location_samples):
     """
     Calculates angle in the x-y plane for the entry with the highest magnitude
-    of sensor values
-    :param log_line: String containing a line of sensor log data
+    of linear accelerometer sensor values
+    :param tap_location_samples: A list of samples for a particular tap
+    location.
     :return: Angle made by highest magnitude impact, in radians. Ranges from
     -pi to pi
     """
-    split_log_line = log_line.split(",")
-    x_value = float(split_log_line[2])
-    y_value = float(split_log_line[3])
-    return math.atan2(y_value, x_value)
+    return [math.atan2(float(log_line.split(",")[3]),
+                       float(log_line.split(",")[2]))
+            for log_line in get_highest_lines(tap_location_samples)]
+    # for log_line in max_magnitude_list:
+    #     [math.atan2(float(log_line.split(",")[3]),
+    #                 float(log_line.split(",")[2]))
+    #      for log_line in ]
+    # split_log_line = log_line.split(",")
+    # x_value = float(split_log_line[2])
+    # y_value = float(split_log_line[3])
+    # return math.atan2(y_value, x_value)
 
 
 def get_sample_p2p(tap_location_samples):
@@ -82,7 +91,8 @@ def get_sample_p2p(tap_location_samples):
 def get_peak_value_sign(tap_location_samples):
     """
     Gets the sign of the peak sensor values on the x, y, and z axes.
-    :param tap_location_samples:
+    :param tap_location_samples: A list of positive or negative samples for a
+    particular tap location.
     :return:
     """
     peak_value_signs = []
@@ -104,6 +114,28 @@ def get_peak_value_sign(tap_location_samples):
         z_max_sign = numpy.sign(z_values[z_max_index])
         peak_value_signs.append([x_max_sign, y_max_sign, z_max_sign])
     return peak_value_signs
+
+
+def get_rms(tap_location_samples):
+    rms_values = []
+    for sample in tap_location_samples:
+        squared_x_values = [
+            float(log_line.split(",")[2])**2 for log_line in sample
+        ]
+        squared_y_values = [
+            float(log_line.split(",")[3])**2 for log_line in sample
+        ]
+        squared_z_values = [
+            float(log_line.split(",")[4])**2 for log_line in sample
+        ]
+        mean_squared_x = statistics.mean(squared_x_values)
+        mean_squared_y = statistics.mean(squared_y_values)
+        mean_squared_z = statistics.mean(squared_z_values)
+        rms_x = math.sqrt(mean_squared_x)
+        rms_y = math.sqrt(mean_squared_y)
+        rms_z = math.sqrt(mean_squared_z)
+        rms_values.append([rms_x, rms_y, rms_z])
+    return rms_values
 
 
 def get_sample_mean(tap_location_samples):
@@ -475,7 +507,20 @@ def featurize(samples):
     return features
 
 
-def make_tap_occurrence_data_unscaled(file_name):
+def featurize_new(samples):
+    features = []
+    for tap_location_sample in samples:
+        p2p = get_sample_p2p(tap_location_sample)
+        sign = get_peak_value_sign(tap_location_sample)
+        rms = get_rms(tap_location_sample)
+        for i in range(len(p2p)):
+            features.append(
+                p2p[i] + sign[i] + rms[i]
+            )
+    return features
+
+
+def make_tap_occurrence_data(file_name):
     """
     Creates the data file for tap occurrences in the format:
     <[-1 for no tap or +1 for tap] <index1>:<x axis lin acc mean> ...
@@ -487,13 +532,13 @@ def make_tap_occurrence_data_unscaled(file_name):
                                                        LEFT_HAND)
     lhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, LEFT_HAND)
     rhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
-                                                       LEFT_HAND)
+                                                       RIGHT_HAND)
     rhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, RIGHT_HAND)
     lhand_n_samples_lin_acc = get_negative_tap_samples(LINEAR_ACCELEROMETER,
                                                        LEFT_HAND)
     lhand_n_samples_gyro = get_negative_tap_samples(GYROSCOPE, LEFT_HAND)
     rhand_n_samples_lin_acc = get_negative_tap_samples(LINEAR_ACCELEROMETER,
-                                                       LEFT_HAND)
+                                                       RIGHT_HAND)
     rhand_n_samples_gyro = get_negative_tap_samples(GYROSCOPE, RIGHT_HAND)
 
     # First do positive linear accelerometer samples
@@ -535,7 +580,67 @@ def make_tap_occurrence_data_unscaled(file_name):
             file.write('\n')
 
 
-def make_hand_data_unscaled(file_name):
+def make_tap_occurrence_data_new(file_name):
+    """
+    Creates the data file for tap occurrences in the format:
+    <[-1 for no tap or +1 for tap] <index1>:<x axis lin acc mean> ...
+    :param file_name: Name of training file to be written
+    :return:
+    """
+    # Get positive and negative samples
+    lhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
+                                                       LEFT_HAND)
+    lhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, LEFT_HAND)
+    rhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
+                                                       RIGHT_HAND)
+    rhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, RIGHT_HAND)
+    lhand_n_samples_lin_acc = get_negative_tap_samples(LINEAR_ACCELEROMETER,
+                                                       LEFT_HAND)
+    lhand_n_samples_gyro = get_negative_tap_samples(GYROSCOPE, LEFT_HAND)
+    rhand_n_samples_lin_acc = get_negative_tap_samples(LINEAR_ACCELEROMETER,
+                                                       RIGHT_HAND)
+    rhand_n_samples_gyro = get_negative_tap_samples(GYROSCOPE, RIGHT_HAND)
+
+    # First do positive linear accelerometer samples
+    lin_acc_p_samples = lhand_p_samples_lin_acc + rhand_p_samples_lin_acc
+    lin_acc_p_features = featurize_new(lin_acc_p_samples)
+    # Add on positive gyroscope samples
+    gyro_p_samples = lhand_p_samples_gyro + rhand_p_samples_gyro
+    gyro_p_features = featurize_new(gyro_p_samples)
+
+    # Synthesize positive tap features
+    positive_features = []
+    for i in range(len(lin_acc_p_features)):
+        positive_features.append(lin_acc_p_features[i] + gyro_p_features[i])
+
+    # Negative linear accelerometer samples
+    lin_acc_n_samples = lhand_n_samples_lin_acc + rhand_n_samples_lin_acc
+    lin_acc_n_features = featurize_new(lin_acc_n_samples)
+    # Negative gyro samples
+    gyro_n_samples = lhand_n_samples_gyro + rhand_n_samples_gyro
+    gyro_n_features = featurize_new(gyro_n_samples)
+
+    # Synthesize negative tap features
+    negative_features = []
+    for i in range(len(lin_acc_n_features)):
+        negative_features.append(lin_acc_n_features[i] + gyro_n_features[i])
+
+    # Now we write to the file.
+    with open(
+            "training/" + file_name + ".train", 'w', encoding='utf-8') as file:
+        for feature_vector in positive_features:
+            file.write("+1 ")
+            for i in range(len(feature_vector)):
+                file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
+            file.write('\n')
+        for feature_vector in negative_features:
+            file.write("-1 ")
+            for i in range(len(feature_vector)):
+                file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
+            file.write('\n')
+
+
+def make_hand_data_2p(file_name):
     """
     Creates the left/right hand training/testing file in the format:
     <hand[-1 for left, +1 for right]> <index1>:<angle at max magnitude> ...
@@ -547,49 +652,106 @@ def make_hand_data_unscaled(file_name):
         process_logs.process_2p_left_hand_lin_acc()
     [rhand_left_taps, rhand_right_taps] = \
         process_logs.process_2p_right_hand_lin_acc()
-    # Get log lines with highest x/y acceleration for left/right hand
-    lhand_highest_log_lines = [get_highest_lines(lhand_left_taps),
-                               get_highest_lines(lhand_right_taps)]
-    rhand_highest_log_lines = [get_highest_lines(rhand_left_taps),
-                               get_highest_lines(rhand_right_taps)]
-    # Get angles
-    left_hand_angles = []
-    right_hand_angles = []
-    for tap_position in lhand_highest_log_lines:
-        for log_line in tap_position:
-            left_hand_angles.append(get_angle(log_line))
-    for tap_position in rhand_highest_log_lines:
-        for log_line in tap_position:
-            right_hand_angles.append(get_angle(log_line))
 
-    # Shuffling?
-    random.shuffle(left_hand_angles)
-    random.shuffle(right_hand_angles)
+    # Get angles
+    lhand_angles = get_angle(lhand_left_taps) + get_angle(lhand_right_taps)
+    rhand_angles = get_angle(rhand_left_taps) + get_angle(rhand_right_taps)
 
     # Write to training file
-    file = open("training/" + file_name + ".train", 'w', encoding='utf-8')
-    for angle_sample in left_hand_angles:
-        file.write("-1 1:" + str(angle_sample) + '\n')
-    for angle_sample in right_hand_angles:
-        file.write("+1 1:" + str(angle_sample) + '\n')
-    file.close()
+    with open("training/" + file_name + ".train", 'w', encoding='utf-8') as \
+            file:
+        for angle_sample in lhand_angles:
+            file.write("+1 1:" + str(angle_sample) + '\n')
+        for angle_sample in rhand_angles:
+            file.write("-1 1:" + str(angle_sample) + '\n')
 
 
-# lhand_pos_gyro = get_positive_tap_samples(GYROSCOPE, LEFT_HAND)
-# lhand_pos_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER, LEFT_HAND)
-# pprint.pprint(len(get_sample_kurtosis(lhand_pos_lin_acc[0])))
-# pprint.pprint(len(get_inf_norm(lhand_pos_gyro[0])))
-# pprint.pprint(len(get_fro_norm(lhand_pos_gyro[0])))
-# pprint.pprint(len(get_pearson_coeff(lhand_pos_lin_acc[0], lhand_pos_gyro[0])))
-# pprint.pprint(len(get_sample_p2p(lhand_pos_gyro[0])))
-# pprint.pprint(len(get_peak_value_sign(lhand_pos_gyro[0])))
-# print(len(make_tap_occurrence_data_unscaled("placeholder")))
-# lhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
-#                                                    LEFT_HAND)
-# lhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, LEFT_HAND)
-# rhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
-#                                                    LEFT_HAND)
-# rhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, RIGHT_HAND)
-# gyro_p_samples = lhand_p_samples_gyro + rhand_p_samples_gyro
-# print(len(gyro_p_samples))
-pprint.pprint(make_tap_occurrence_data_unscaled("tap_occurrence_unscaled"))
+def make_hand_data_5p(file_name):
+    """
+    Creates the left/right hand training/testing file in the format:
+    <hand[-1 for left, +1 for right]> <index1>:<angle at max magnitude> ...
+    :param file_name: Name of training file to be written
+    :return:
+    """
+    # Get lists of data windows for left/right hand taps
+    lhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
+                                                       LEFT_HAND)
+    lhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, LEFT_HAND)
+    rhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
+                                                       RIGHT_HAND)
+    rhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, RIGHT_HAND)
+
+    # Angles not calculated in featurize() since only lin acc is relevant
+    lhand_angles = []
+    for tap_location_sample in lhand_p_samples_lin_acc:
+        lhand_angles = lhand_angles + get_angle(tap_location_sample)
+    rhand_angles = []
+    for tap_location_sample in rhand_p_samples_lin_acc:
+        rhand_angles = rhand_angles + get_angle(tap_location_sample)
+
+    # Other features
+    lhand_lin_acc_features = featurize(lhand_p_samples_lin_acc)
+    lhand_gyro_features = featurize(lhand_p_samples_gyro)
+    rhand_lin_acc_features = featurize(rhand_p_samples_lin_acc)
+    rhand_gyro_features = featurize(rhand_p_samples_gyro)
+
+    lhand_features = []
+    for i in range(len(lhand_lin_acc_features)):
+        lhand_features.append([lhand_angles[i]] + lhand_lin_acc_features[i] +
+                              lhand_gyro_features[i])
+
+    rhand_features = []
+    for i in range(len(rhand_lin_acc_features)):
+        rhand_features.append([rhand_angles[i]] + rhand_lin_acc_features[i] +
+                              rhand_gyro_features[i])
+
+    # Now we write to the file.
+    with open(
+            "training/" + file_name + ".train", 'w', encoding='utf-8') as file:
+        for feature_vector in lhand_features:
+            file.write("+1 ")
+            for i in range(len(feature_vector)):
+                file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
+            file.write('\n')
+        for feature_vector in rhand_features:
+            file.write("-1 ")
+            for i in range(len(feature_vector)):
+                file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
+            file.write('\n')
+
+    # [lhand_left_taps, lhand_right_taps] = \
+    #     process_logs.process_2p_left_hand_lin_acc()
+    # [rhand_left_taps, rhand_right_taps] = \
+    #     process_logs.process_2p_right_hand_lin_acc()
+    # # Get log lines with highest x/y acceleration for left/right hand
+    # lhand_highest_log_lines = [get_highest_lines(lhand_left_taps),
+    #                            get_highest_lines(lhand_right_taps)]
+    # rhand_highest_log_lines = [get_highest_lines(rhand_left_taps),
+    #                            get_highest_lines(rhand_right_taps)]
+    # # Get angles
+    # left_hand_angles = []
+    # right_hand_angles = []
+    # for tap_position in lhand_highest_log_lines:
+    #     for log_line in tap_position:
+    #         left_hand_angles.append(get_angle(log_line))
+    # for tap_position in rhand_highest_log_lines:
+    #     for log_line in tap_position:
+    #         right_hand_angles.append(get_angle(log_line))
+    #
+    # # Shuffling?
+    # random.shuffle(left_hand_angles)
+    # random.shuffle(right_hand_angles)
+    #
+    # # Write to training file
+    # file = open("training/" + file_name + ".train", 'w', encoding='utf-8')
+    # for angle_sample in left_hand_angles:
+    #     file.write("-1 1:" + str(angle_sample) + '\n')
+    # for angle_sample in right_hand_angles:
+    #     file.write("+1 1:" + str(angle_sample) + '\n')
+    # file.close()
+
+
+make_tap_occurrence_data("tap_occurrence_unscaled")
+make_tap_occurrence_data_new("tap_occurrence_unscaled_new_features")
+# make_hand_data_2p("hand_2p_unscaled")
+# make_hand_data_5p("hand_5p_unscaled")
