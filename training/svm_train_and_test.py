@@ -3,7 +3,11 @@ import pprint
 import numpy
 
 
-def cross_validate(c_low, c_high, gamma_low, gamma_high):
+def cross_validate(parameters):
+    c_low = parameters[0]
+    c_high = parameters[1]
+    gamma_low = parameters[2]
+    gamma_high = parameters[3]
     results = []
     for c_power in numpy.linspace(c_low, c_high, 5):
         for gamma_power in numpy.linspace(gamma_low, gamma_high, 5):
@@ -14,7 +18,7 @@ def cross_validate(c_low, c_high, gamma_low, gamma_high):
                      '-v', '10',  # 10 fold cross validation
                      '-c', str(cost),  # Cost
                      '-g', str(gamma),  # Gamma in kernel function
-                     'hand_5p_scaled_new_features.train'],
+                     'hand_5p_scaled_angles_only.train'],
                     stdout=subprocess.PIPE
             )
 
@@ -25,7 +29,8 @@ def cross_validate(c_low, c_high, gamma_low, gamma_high):
             results.append([c_power, gamma_power, percentage])
     return results
 
-results = cross_validate(10, 10.5, -5.1, -4.9)
+params_standard = (-6, 12, -6, -12)
+results = cross_validate((7.5, 8.5, -8, -7))
 percentage_list = [result[2] for result in results]
 max_percentage = max(percentage_list)
 max_percentage_index = percentage_list.index(max_percentage)

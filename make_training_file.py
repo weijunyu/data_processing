@@ -771,8 +771,33 @@ def make_hand_data_5p_new(file_name):
             file.write('\n')
 
 
-make_tap_occurrence_data("tap_occurrence_unscaled")
+def make_hand_data_5p_angle(file_name):
+    # Get lists of data windows for left/right hand taps
+    lhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
+                                                       LEFT_HAND)
+    rhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
+                                                       RIGHT_HAND)
+
+    # Get angles from linear accelerometer
+    lhand_angles = []
+    for tap_location_sample in lhand_p_samples_lin_acc:
+        lhand_angles = lhand_angles + get_angle(tap_location_sample)
+    rhand_angles = []
+    for tap_location_sample in rhand_p_samples_lin_acc:
+        rhand_angles = rhand_angles + get_angle(tap_location_sample)
+
+    # Write to training file
+    with open("training/" + file_name + ".train", 'w', encoding='utf-8') as \
+            file:
+        for angle_sample in lhand_angles:
+            file.write("+1 1:" + str(angle_sample) + '\n')
+        for angle_sample in rhand_angles:
+            file.write("-1 1:" + str(angle_sample) + '\n')
+
+
+# make_tap_occurrence_data("tap_occurrence_unscaled")
 # make_tap_occurrence_data_new("tap_occurrence_unscaled_new_features")
 # make_hand_data_2p("hand_2p_unscaled")
 # make_hand_data_5p("hand_5p_unscaled")
 # make_hand_data_5p_new("hand_5p_unscaled_new_features")
+make_hand_data_5p_angle("hand_5p_unscaled_angles_only")

@@ -40,3 +40,11 @@ scaling_process_5 = subprocess.run(['svm-scale.exe', '-s',
                                     'hand_5p_scaled_new_features.train'],
                                    shell=True,  # Necessary for the > operator
                                    stdout=subprocess.PIPE)
+
+scaling_process_6 = subprocess.run(['svm-scale.exe', '-s',
+                                    'range_hand_5p_angles_only',
+                                    'hand_5p_unscaled_angles_only.train',
+                                    '>',
+                                    'hand_5p_scaled_angles_only.train'],
+                                   shell=True,  # Necessary for the > operator
+                                   stdout=subprocess.PIPE)
