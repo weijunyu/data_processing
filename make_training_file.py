@@ -6,8 +6,6 @@ import pprint
 import numpy
 
 from scipy import stats
-from numpy import linalg
-
 
 LEFT_HAND = "left hand"
 RIGHT_HAND = "right hand"
@@ -273,7 +271,7 @@ def get_l1_norm(tap_location_samples):
                 for log_line in sample
             ]
         )
-        l1_norms.append(linalg.norm(corr_matrix, ord=1))
+        l1_norms.append(numpy.linalg.norm(corr_matrix, ord=1))
     return l1_norms
 
 
@@ -288,7 +286,7 @@ def get_inf_norm(tap_location_samples):
                 for log_line in sample
             ]
         )
-        inf_norms.append(linalg.norm(corr_matrix, ord=numpy.inf))
+        inf_norms.append(numpy.linalg.norm(corr_matrix, ord=numpy.inf))
     return inf_norms
 
 
@@ -309,7 +307,7 @@ def get_fro_norm(tap_location_samples):
                 for log_line in sample
             ]
         )
-        fro_norms.append(linalg.norm(corr_matrix, ord='fro'))
+        fro_norms.append(numpy.linalg.norm(corr_matrix, ord='fro'))
     return fro_norms
 
 
