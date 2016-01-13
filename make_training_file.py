@@ -6,7 +6,6 @@ import pprint
 import numpy
 
 from scipy import stats
-from numpy import matrix
 from numpy import linalg
 
 
@@ -266,7 +265,7 @@ def get_sample_kurtosis(tap_location_samples):
 def get_l1_norm(tap_location_samples):
     l1_norms = []
     for sample in tap_location_samples:
-        corr_matrix = matrix(
+        corr_matrix = numpy.array(
             [
                 [float(log_line.split(",")[2]),
                  float(log_line.split(",")[3]),
@@ -281,7 +280,7 @@ def get_l1_norm(tap_location_samples):
 def get_inf_norm(tap_location_samples):
     inf_norms = []
     for sample in tap_location_samples:
-        corr_matrix = matrix(
+        corr_matrix = numpy.array(
             [
                 [float(log_line.split(",")[2]),
                  float(log_line.split(",")[3]),
@@ -302,7 +301,7 @@ def get_fro_norm(tap_location_samples):
     """
     fro_norms = []
     for sample in tap_location_samples:
-        corr_matrix = matrix(
+        corr_matrix = numpy.array(
             [
                 [float(log_line.split(",")[2]),
                  float(log_line.split(",")[3]),
@@ -774,8 +773,8 @@ def make_hand_data_5p_new(file_name):
             file.write('\n')
 
 
-# make_tap_occurrence_data("tap_occurrence_unscaled")
+make_tap_occurrence_data("tap_occurrence_unscaled")
 # make_tap_occurrence_data_new("tap_occurrence_unscaled_new_features")
-make_hand_data_2p("hand_2p_unscaled")
-make_hand_data_5p("hand_5p_unscaled")
-make_hand_data_5p_new("hand_5p_unscaled_new_features")
+# make_hand_data_2p("hand_2p_unscaled")
+# make_hand_data_5p("hand_5p_unscaled")
+# make_hand_data_5p_new("hand_5p_unscaled_new_features")
