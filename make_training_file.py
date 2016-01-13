@@ -717,6 +717,52 @@ def make_hand_data_5p(file_name):
             file.write('\n')
 
 
+def make_hand_data_5p_no_angles(file_name):
+    """
+    Creates the left/right hand training/testing file in the format:
+    <hand[-1 for left, +1 for right]> <index1>:<angle at max magnitude> ...
+    :param file_name: Name of training file to be written
+    :return:
+    """
+    # Get lists of data windows for left/right hand taps
+    lhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
+                                                       LEFT_HAND)
+    lhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, LEFT_HAND)
+    rhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
+                                                       RIGHT_HAND)
+    rhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, RIGHT_HAND)
+
+    # Other features
+    lhand_lin_acc_features = featurize(lhand_p_samples_lin_acc)
+    lhand_gyro_features = featurize(lhand_p_samples_gyro)
+    rhand_lin_acc_features = featurize(rhand_p_samples_lin_acc)
+    rhand_gyro_features = featurize(rhand_p_samples_gyro)
+
+    lhand_features = []
+    for i in range(len(lhand_lin_acc_features)):
+        lhand_features.append(lhand_lin_acc_features[i] +
+                              lhand_gyro_features[i])
+
+    rhand_features = []
+    for i in range(len(rhand_lin_acc_features)):
+        rhand_features.append(rhand_lin_acc_features[i] +
+                              rhand_gyro_features[i])
+
+    # Now we write to the file.
+    with open(
+            "training/" + file_name + ".train", 'w', encoding='utf-8') as file:
+        for feature_vector in lhand_features:
+            file.write("+1 ")
+            for i in range(len(feature_vector)):
+                file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
+            file.write('\n')
+        for feature_vector in rhand_features:
+            file.write("-1 ")
+            for i in range(len(feature_vector)):
+                file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
+            file.write('\n')
+
+
 def make_hand_data_5p_new(file_name):
     """
     Creates the left/right hand training/testing file in the format:
@@ -771,6 +817,52 @@ def make_hand_data_5p_new(file_name):
             file.write('\n')
 
 
+def make_hand_data_5p_new_no_angles(file_name):
+    """
+    Creates the left/right hand training/testing file in the format:
+    <hand[-1 for left, +1 for right]> <index1>:<angle at max magnitude> ...
+    :param file_name: Name of training file to be written
+    :return:
+    """
+    # Get lists of data windows for left/right hand taps
+    lhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
+                                                       LEFT_HAND)
+    lhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, LEFT_HAND)
+    rhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
+                                                       RIGHT_HAND)
+    rhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, RIGHT_HAND)
+
+    # Features
+    lhand_lin_acc_features = featurize_new(lhand_p_samples_lin_acc)
+    lhand_gyro_features = featurize_new(lhand_p_samples_gyro)
+    rhand_lin_acc_features = featurize_new(rhand_p_samples_lin_acc)
+    rhand_gyro_features = featurize_new(rhand_p_samples_gyro)
+
+    lhand_features = []
+    for i in range(len(lhand_lin_acc_features)):
+        lhand_features.append(lhand_lin_acc_features[i] +
+                              lhand_gyro_features[i])
+
+    rhand_features = []
+    for i in range(len(rhand_lin_acc_features)):
+        rhand_features.append(rhand_lin_acc_features[i] +
+                              rhand_gyro_features[i])
+
+    # Now we write to the file.
+    with open(
+            "training/" + file_name + ".train", 'w', encoding='utf-8') as file:
+        for feature_vector in lhand_features:
+            file.write("+1 ")
+            for i in range(len(feature_vector)):
+                file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
+            file.write('\n')
+        for feature_vector in rhand_features:
+            file.write("-1 ")
+            for i in range(len(feature_vector)):
+                file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
+            file.write('\n')
+
+
 def make_hand_data_5p_angle(file_name):
     # Get lists of data windows for left/right hand taps
     lhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
@@ -800,4 +892,5 @@ def make_hand_data_5p_angle(file_name):
 # make_hand_data_2p("hand_2p_unscaled")
 # make_hand_data_5p("hand_5p_unscaled")
 # make_hand_data_5p_new("hand_5p_unscaled_new_features")
-make_hand_data_5p_angle("hand_5p_unscaled_angles_only")
+# make_hand_data_5p_angle("hand_5p_unscaled_angles_only")
+make_hand_data_5p_new_no_angles("hand_5p_unscaled_new_no_angles")
