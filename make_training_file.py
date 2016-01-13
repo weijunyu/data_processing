@@ -719,39 +719,63 @@ def make_hand_data_5p(file_name):
                 file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
             file.write('\n')
 
-    # [lhand_left_taps, lhand_right_taps] = \
-    #     process_logs.process_2p_left_hand_lin_acc()
-    # [rhand_left_taps, rhand_right_taps] = \
-    #     process_logs.process_2p_right_hand_lin_acc()
-    # # Get log lines with highest x/y acceleration for left/right hand
-    # lhand_highest_log_lines = [get_highest_lines(lhand_left_taps),
-    #                            get_highest_lines(lhand_right_taps)]
-    # rhand_highest_log_lines = [get_highest_lines(rhand_left_taps),
-    #                            get_highest_lines(rhand_right_taps)]
-    # # Get angles
-    # left_hand_angles = []
-    # right_hand_angles = []
-    # for tap_position in lhand_highest_log_lines:
-    #     for log_line in tap_position:
-    #         left_hand_angles.append(get_angle(log_line))
-    # for tap_position in rhand_highest_log_lines:
-    #     for log_line in tap_position:
-    #         right_hand_angles.append(get_angle(log_line))
-    #
-    # # Shuffling?
-    # random.shuffle(left_hand_angles)
-    # random.shuffle(right_hand_angles)
-    #
-    # # Write to training file
-    # file = open("training/" + file_name + ".train", 'w', encoding='utf-8')
-    # for angle_sample in left_hand_angles:
-    #     file.write("-1 1:" + str(angle_sample) + '\n')
-    # for angle_sample in right_hand_angles:
-    #     file.write("+1 1:" + str(angle_sample) + '\n')
-    # file.close()
+
+def make_hand_data_5p_new(file_name):
+    """
+    Creates the left/right hand training/testing file in the format:
+    <hand[-1 for left, +1 for right]> <index1>:<angle at max magnitude> ...
+    :param file_name: Name of training file to be written
+    :return:
+    """
+    # Get lists of data windows for left/right hand taps
+    lhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
+                                                       LEFT_HAND)
+    lhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, LEFT_HAND)
+    rhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
+                                                       RIGHT_HAND)
+    rhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, RIGHT_HAND)
+
+    # Angles not calculated in featurize() since only lin acc is relevant
+    lhand_angles = []
+    for tap_location_sample in lhand_p_samples_lin_acc:
+        lhand_angles = lhand_angles + get_angle(tap_location_sample)
+    rhand_angles = []
+    for tap_location_sample in rhand_p_samples_lin_acc:
+        rhand_angles = rhand_angles + get_angle(tap_location_sample)
+
+    # Other features
+    lhand_lin_acc_features = featurize_new(lhand_p_samples_lin_acc)
+    lhand_gyro_features = featurize_new(lhand_p_samples_gyro)
+    rhand_lin_acc_features = featurize_new(rhand_p_samples_lin_acc)
+    rhand_gyro_features = featurize_new(rhand_p_samples_gyro)
+
+    lhand_features = []
+    for i in range(len(lhand_lin_acc_features)):
+        lhand_features.append([lhand_angles[i]] + lhand_lin_acc_features[i] +
+                              lhand_gyro_features[i])
+
+    rhand_features = []
+    for i in range(len(rhand_lin_acc_features)):
+        rhand_features.append([rhand_angles[i]] + rhand_lin_acc_features[i] +
+                              rhand_gyro_features[i])
+
+    # Now we write to the file.
+    with open(
+            "training/" + file_name + ".train", 'w', encoding='utf-8') as file:
+        for feature_vector in lhand_features:
+            file.write("+1 ")
+            for i in range(len(feature_vector)):
+                file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
+            file.write('\n')
+        for feature_vector in rhand_features:
+            file.write("-1 ")
+            for i in range(len(feature_vector)):
+                file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
+            file.write('\n')
 
 
-make_tap_occurrence_data("tap_occurrence_unscaled")
-make_tap_occurrence_data_new("tap_occurrence_unscaled_new_features")
-# make_hand_data_2p("hand_2p_unscaled")
-# make_hand_data_5p("hand_5p_unscaled")
+# make_tap_occurrence_data("tap_occurrence_unscaled")
+# make_tap_occurrence_data_new("tap_occurrence_unscaled_new_features")
+make_hand_data_2p("hand_2p_unscaled")
+make_hand_data_5p("hand_5p_unscaled")
+make_hand_data_5p_new("hand_5p_unscaled_new_features")
