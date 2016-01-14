@@ -18,7 +18,7 @@ def cross_validate(parameters):
                      '-v', '10',  # 10 fold cross validation
                      '-c', str(cost),  # Cost
                      '-g', str(gamma),  # Gamma in kernel function
-                     'hand_5p_scaled_new_no_angles.train'],
+                     'hand_2p_scaled.train'],
                     stdout=subprocess.PIPE
             )
 
@@ -30,7 +30,7 @@ def cross_validate(parameters):
     return results
 
 params_standard = (-6, 12, -6, -12)
-results = cross_validate((12.6,13.4,-6.5,-5.5))
+results = cross_validate((2,3,2,3))
 percentage_list = [result[2] for result in results]
 max_percentage = max(percentage_list)
 max_percentage_index = percentage_list.index(max_percentage)

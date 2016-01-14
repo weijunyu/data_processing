@@ -891,6 +891,8 @@ def make_hand_data_5p_angle(file_name):
 # make_tap_occurrence_data_new("tap_occurrence_unscaled_new_features")
 # make_hand_data_2p("hand_2p_unscaled")
 # make_hand_data_5p("hand_5p_unscaled")
+# make_hand_data_5p_no_angles("hand_5p_unscaled_no_angles")
 # make_hand_data_5p_new("hand_5p_unscaled_new_features")
+# make_hand_data_5p_new_no_angles("hand_5p_unscaled_new_no_angles")
 # make_hand_data_5p_angle("hand_5p_unscaled_angles_only")
-make_hand_data_5p_new_no_angles("hand_5p_unscaled_new_no_angles")
+
