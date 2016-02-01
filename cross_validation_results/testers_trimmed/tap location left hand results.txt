@@ -1,0 +1,12 @@
+10 fold cross validation results for left hand tap location
+
+[c_power, gamma_power, accuracy]
+
+Standard features:
+[7.75, -5.75, 61.5873]
+
+New features:
+[6.85, -5.4, 59.6825]
+
+Combined features:
+[6.7, -6.3, 61.746]

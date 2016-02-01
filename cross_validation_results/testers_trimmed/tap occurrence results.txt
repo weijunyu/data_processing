@@ -1,0 +1,12 @@
+Tap occurrence results from testers:
+
+[c_power, gamma_power, result accuracy]
+
+Tap occurrence classifier, standard features:
+[10.6, -7.5, 97.5]
+
+Tap occurrence classifier, new features:
+[11.8, -8.6, 96.9048]
+
+Tap occurrence classifier, combined features:
+[7.25, -9.0, 97.381]

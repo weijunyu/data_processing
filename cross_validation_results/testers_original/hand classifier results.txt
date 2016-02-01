@@ -1,0 +1,12 @@
+Hand classifier results from testers:
+
+[c_power, gamma_power, result accuracy]
+
+Holding hand classifier, standard features:
+[11.5, -6.375, 80.2778]
+
+Holding hand classifier, new features:
+[7.25, -6.0, 75.9722]
+
+Holding hand classifier, combined features:
+[11.575, -8.575, 80.0694]
