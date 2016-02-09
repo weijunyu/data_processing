@@ -1,0 +1,12 @@
+[c_power, gamma_power, accuracy]
+
+Standard features:
+[13.5, -6.8, 98.3333]
+[19.0, -11.3333, 98.4722]
+
+New features:
+[7.3333, -3.6667, 98.0093]
+
+Combined features:
+[12.6, -11.0, 98.3333]
+[16.3333, -12.6667, 98.3796]

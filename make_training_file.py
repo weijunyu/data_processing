@@ -586,7 +586,7 @@ def make_tap_occurrence_data(file_name):
 
     # Now we write to the file.
     with open(
-            "training/" + file_name + ".train", 'w', encoding='utf-8') as file:
+            "training/" + file_name + ".unscaled", 'w', encoding='utf-8') as file:
         for feature_vector in positive_features:
             file.write("+1 ")
             for i in range(len(feature_vector)):
@@ -646,7 +646,7 @@ def make_tap_occurrence_data_new(file_name):
 
     # Now we write to the file.
     with open(
-            "training/" + file_name + ".train", 'w', encoding='utf-8') as file:
+            "training/" + file_name + ".unscaled", 'w', encoding='utf-8') as file:
         for feature_vector in positive_features:
             file.write("+1 ")
             for i in range(len(feature_vector)):
@@ -706,7 +706,7 @@ def make_tap_occurrence_data_combined(file_name):
 
     # Now we write to the file.
     with open(
-            "training/" + file_name + ".train", 'w', encoding='utf-8') as file:
+            "training/" + file_name + ".unscaled", 'w', encoding='utf-8') as file:
         for feature_vector in positive_features:
             file.write("+1 ")
             for i in range(len(feature_vector)):
@@ -737,7 +737,7 @@ def make_hand_data_2p(file_name):
     rhand_angles = get_angle(rhand_left_taps) + get_angle(rhand_right_taps)
 
     # Write to training file
-    with open("training/" + file_name + ".train", 'w', encoding='utf-8') as \
+    with open("training/" + file_name + ".unscaled", 'w', encoding='utf-8') as \
             file:
         for angle_sample in lhand_angles:
             file.write("+1 1:" + str(angle_sample) + '\n')
@@ -786,7 +786,7 @@ def make_hand_data_5p(file_name):
 
     # Now we write to the file.
     with open(
-            "training/" + file_name + ".train", 'w', encoding='utf-8') as file:
+            "training/" + file_name + ".unscaled", 'w', encoding='utf-8') as file:
         for feature_vector in lhand_features:
             file.write("+1 ")
             for i in range(len(feature_vector)):
@@ -832,7 +832,7 @@ def make_hand_data_5p_no_angles(file_name):
 
     # Now we write to the file.
     with open(
-            "training/" + file_name + ".train", 'w', encoding='utf-8') as file:
+            "training/" + file_name + ".unscaled", 'w', encoding='utf-8') as file:
         for feature_vector in lhand_features:
             file.write("+1 ")
             for i in range(len(feature_vector)):
@@ -886,7 +886,7 @@ def make_hand_data_5p_new(file_name):
 
     # Now we write to the file.
     with open(
-            "training/" + file_name + ".train", 'w', encoding='utf-8') as file:
+            "training/" + file_name + ".unscaled", 'w', encoding='utf-8') as file:
         for feature_vector in lhand_features:
             file.write("+1 ")
             for i in range(len(feature_vector)):
@@ -932,7 +932,7 @@ def make_hand_data_5p_new_no_angles(file_name):
 
     # Now we write to the file.
     with open(
-            "training/" + file_name + ".train", 'w', encoding='utf-8') as file:
+            "training/" + file_name + ".unscaled", 'w', encoding='utf-8') as file:
         for feature_vector in lhand_features:
             file.write("+1 ")
             for i in range(len(feature_vector)):
@@ -961,7 +961,7 @@ def make_hand_data_5p_angle(file_name):
         rhand_angles = rhand_angles + get_angle(tap_location_sample)
 
     # Write to training file
-    with open("training/" + file_name + ".train", 'w', encoding='utf-8') as \
+    with open("training/" + file_name + ".unscaled", 'w', encoding='utf-8') as \
             file:
         for angle_sample in lhand_angles:
             file.write("+1 1:" + str(angle_sample) + '\n')
@@ -1010,7 +1010,7 @@ def make_hand_data_5p_combined(file_name):
 
     # Now we write to the file.
     with open(
-            "training/" + file_name + ".train", 'w', encoding='utf-8') as file:
+            "training/" + file_name + ".unscaled", 'w', encoding='utf-8') as file:
         for feature_vector in lhand_features:
             file.write("+1 ")
             for i in range(len(feature_vector)):
@@ -1047,7 +1047,7 @@ def make_left_hand_location_data(file_name):
 
     # Now we write to the file.
     with open(
-            "training/" + file_name + ".train", 'w', encoding='utf-8') as file:
+            "training/" + file_name + ".unscaled", 'w', encoding='utf-8') as file:
         location = 1
         count = 1
         feature_count = len(positive_features)
@@ -1086,7 +1086,7 @@ def make_left_hand_location_data_new(file_name):
 
     # Now we write to the file.
     with open(
-            "training/" + file_name + ".train", 'w', encoding='utf-8') as file:
+            "training/" + file_name + ".unscaled", 'w', encoding='utf-8') as file:
         location = 1
         count = 1
         feature_count = len(positive_features)
@@ -1125,7 +1125,7 @@ def make_left_hand_location_data_combined(file_name):
 
     # Now we write to the file.
     with open(
-            "training/" + file_name + ".train", 'w', encoding='utf-8') as file:
+            "training/" + file_name + ".unscaled", 'w', encoding='utf-8') as file:
         location = 1
         count = 1
         feature_count = len(positive_features)
@@ -1164,7 +1164,7 @@ def make_right_hand_location_data(file_name):
 
     # Now we write to the file.
     with open(
-            "training/" + file_name + ".train", 'w', encoding='utf-8') as file:
+            "training/" + file_name + ".unscaled", 'w', encoding='utf-8') as file:
         location = 1
         count = 1
         feature_count = len(positive_features)
@@ -1203,7 +1203,7 @@ def make_right_hand_location_data_new(file_name):
 
     # Now we write to the file.
     with open(
-            "training/" + file_name + ".train", 'w', encoding='utf-8') as file:
+            "training/" + file_name + ".unscaled", 'w', encoding='utf-8') as file:
         location = 1
         count = 1
         feature_count = len(positive_features)
@@ -1242,7 +1242,7 @@ def make_right_hand_location_data_combined(file_name):
 
     # Now we write to the file.
     with open(
-            "training/" + file_name + ".train", 'w', encoding='utf-8') as file:
+            "training/" + file_name + ".unscaled", 'w', encoding='utf-8') as file:
         location = 1
         count = 1
         feature_count = len(positive_features)
@@ -1257,22 +1257,22 @@ def make_right_hand_location_data_combined(file_name):
             count += 1
 
 
-# make_tap_occurrence_data("tap_occurrence_unscaled")
-# make_tap_occurrence_data_new("tap_occurrence_unscaled_new_features")
-# make_tap_occurrence_data_combined("tap_occurrence_unscaled_combined")
+make_tap_occurrence_data("tap_occurrence")
+# make_tap_occurrence_data_new("tap_occurrence_new_features")
+# make_tap_occurrence_data_combined("tap_occurrence_combined")
 
-# make_hand_data_2p("hand_2p_unscaled")
-# make_hand_data_5p("hand_5p_unscaled")
-# make_hand_data_5p_no_angles("hand_5p_unscaled_no_angles")
-# make_hand_data_5p_new("hand_5p_unscaled_new_features")
-# make_hand_data_5p_new_no_angles("hand_5p_unscaled_new_no_angles")
-# make_hand_data_5p_angle("hand_5p_unscaled_angles_only")
-# make_hand_data_5p_combined("hand_5p_unscaled_combined")
+# make_hand_data_2p("hand_2p")
+make_hand_data_5p("hand_5p")
+# make_hand_data_5p_no_angles("hand_5p_no_angles")
+# make_hand_data_5p_new("hand_5p_new_features")
+# make_hand_data_5p_new_no_angles("hand_5p_new_no_angles")
+# make_hand_data_5p_angle("hand_5p_angles_only")
+# make_hand_data_5p_combined("hand_5p_combined")
 
-# make_left_hand_location_data("location_lhand_unscaled")
-# make_left_hand_location_data_new("location_lhand_unscaled_new_features")
-# make_left_hand_location_data_combined("location_lhand_unscaled_combined")
-#
-# make_right_hand_location_data("location_rhand_unscaled")
-# make_right_hand_location_data_new("location_rhand_unscaled_new_features")
-# make_right_hand_location_data_combined("location_rhand_unscaled_combined")
+make_left_hand_location_data("location_lhand")
+# make_left_hand_location_data_new("location_lhand_new_features")
+# make_left_hand_location_data_combined("location_lhand_combined")
+
+make_right_hand_location_data("location_rhand")
+# make_right_hand_location_data_new("location_rhand_new_features")
+# make_right_hand_location_data_combined("location_rhand_combined")

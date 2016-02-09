@@ -1,0 +1,8 @@
+Standard features:
+[11.8333, -9.0, 75.5556]
+
+New features:
+[16.1667, -10.3333, 72.4074]
+
+Combined features:
+[7.6667, -8.6667, 75.5556]
