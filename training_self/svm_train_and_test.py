@@ -1,9 +1,10 @@
 import subprocess
 import pprint
 import numpy
+import os
 
 
-def cross_validate(parameters):
+def cross_validate(parameters, file):
     c_low = parameters[0]
     c_high = parameters[1]
     gamma_low = parameters[2]
@@ -18,7 +19,7 @@ def cross_validate(parameters):
                      '-v', '10',  # 10 fold cross validation
                      '-c', str(cost),  # Cost
                      '-g', str(gamma),  # Gamma in kernel function
-                     'hand_2p_scaled.train'],
+                     file],
                     stdout=subprocess.PIPE
             )
 
@@ -29,11 +30,28 @@ def cross_validate(parameters):
             results.append([c_power, gamma_power, percentage])
     return results
 
-params_standard = (-6, 12, -6, -12)
-results = cross_validate(params_standard)
-percentage_list = [result[2] for result in results]
-max_percentage = max(percentage_list)
-max_percentage_index = percentage_list.index(max_percentage)
 
-pprint.pprint(results)
-pprint.pprint(results[max_percentage_index])
+for file in os.listdir():
+    file_name, file_ext = os.path.splitext(file)
+    if file_ext == ".scaled":
+        pprint.pprint(file)
+
+        step = 18
+        lower_bound = -6
+        upper_bound = lower_bound + step  # initial bounds are -6 to 12
+        params = (lower_bound, upper_bound,
+                  lower_bound, upper_bound)
+        for i in range(4):
+            results = cross_validate(params, file)
+            percentage_list = [result[2] for result in results]
+            max_percentage = max(percentage_list)
+            max_percentage_index = percentage_list.index(max_percentage)
+            optimal_params = results[max_percentage_index][:2]
+            step /= 3
+            params = [
+                optimal_params[0] - step,
+                optimal_params[0] + step,
+                optimal_params[1] - step,
+                optimal_params[1] + step
+            ]
+            pprint.pprint(results[max_percentage_index])

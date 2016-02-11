@@ -1,9 +1,8 @@
 import math
-import random
 import process_logs
 import statistics
-import pprint
 import numpy
+import os
 
 from scipy import stats
 
@@ -11,6 +10,55 @@ LEFT_HAND = "left hand"
 RIGHT_HAND = "right hand"
 LINEAR_ACCELEROMETER = "linear accelerometer"
 GYROSCOPE = "gyroscope"
+
+
+def clean_logs():
+    # get length of gyro and lin_acc log files, then cut the top x lines in the
+    # lin_acc file
+
+    log_dir_gyro = os.path.join('logs', '5_points', 'right_hand', 'gyro')
+    log_dir_lin_acc = os.path.join('logs', '5_points', 'right_hand', 'lin_acc')
+
+    file_names = os.listdir(log_dir_gyro)  # list of strings, '1', '2', etc
+
+    for file_name in file_names:
+        with open(os.path.join(log_dir_gyro, file_name),
+                  encoding='utf-8') as gyro_file:
+            with open(os.path.join(log_dir_lin_acc, file_name),
+                      encoding='utf-8') as lin_acc_file:
+                gyro_content = gyro_file.readlines()
+                lin_acc_content = lin_acc_file.readlines()
+                gyro_length = len(gyro_content)
+                lin_acc_length = len(lin_acc_content)
+                diff = lin_acc_length - gyro_length
+                for i in range(diff):
+                    lin_acc_content.pop(0)
+                with open(os.path.join(log_dir_lin_acc, file_name),
+                          mode='w', encoding='utf-8') as lin_acc_file_new:
+                    for line in lin_acc_content:
+                        lin_acc_file_new.write(line)
+
+    log_dir_gyro = os.path.join('logs', '5_points', 'left_hand', 'gyro')
+    log_dir_lin_acc = os.path.join('logs', '5_points', 'left_hand', 'lin_acc')
+
+    file_names = os.listdir(log_dir_gyro)  # list of strings, '1', '2', etc
+
+    for file_name in file_names:
+        with open(os.path.join(log_dir_gyro, file_name),
+                  encoding='utf-8') as gyro_file:
+            with open(os.path.join(log_dir_lin_acc, file_name),
+                      encoding='utf-8') as lin_acc_file:
+                gyro_content = gyro_file.readlines()
+                lin_acc_content = lin_acc_file.readlines()
+                gyro_length = len(gyro_content)
+                lin_acc_length = len(lin_acc_content)
+                diff = lin_acc_length - gyro_length
+                for i in range(diff):
+                    lin_acc_content.pop(0)
+                with open(os.path.join(log_dir_lin_acc, file_name),
+                          mode='w', encoding='utf-8') as lin_acc_file_new:
+                    for line in lin_acc_content:
+                        lin_acc_file_new.write(line)
 
 
 def get_highest_lines(data_list):
@@ -1256,6 +1304,10 @@ def make_right_hand_location_data_combined(file_name):
                 location += 1
             count += 1
 
+
+# Program starts here ----------------------------------------------------------
+
+clean_logs()
 
 make_tap_occurrence_data("tap_occurrence")
 # make_tap_occurrence_data_new("tap_occurrence_new_features")
