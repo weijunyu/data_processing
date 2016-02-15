@@ -1314,17 +1314,21 @@ make_tap_occurrence_data("tap_occurrence")
 # make_tap_occurrence_data_combined("tap_occurrence_combined")
 
 # make_hand_data_2p("hand_2p")
-make_hand_data_5p("hand_5p")
+
+# make_hand_data_5p("hand_5p")
+
 # make_hand_data_5p_no_angles("hand_5p_no_angles")
 # make_hand_data_5p_new("hand_5p_new_features")
 # make_hand_data_5p_new_no_angles("hand_5p_new_no_angles")
 # make_hand_data_5p_angle("hand_5p_angles_only")
 # make_hand_data_5p_combined("hand_5p_combined")
 
-make_left_hand_location_data("location_lhand")
+# make_left_hand_location_data("location_lhand")
+
 # make_left_hand_location_data_new("location_lhand_new_features")
 # make_left_hand_location_data_combined("location_lhand_combined")
 
-make_right_hand_location_data("location_rhand")
+# make_right_hand_location_data("location_rhand")
+
 # make_right_hand_location_data_new("location_rhand_new_features")
 # make_right_hand_location_data_combined("location_rhand_combined")
