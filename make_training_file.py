@@ -366,26 +366,42 @@ def get_pearson_coeff(lin_acc_samples, gyro_samples):
     :return: A list of x, y, and z axis pearson values, for each sample pair.
     """
     # Get array of x, y, and z linear acceleration values
-    lin_acc_container = []
-    for sample in lin_acc_samples:
-        lin_acc_x = [float(log_line.split(",")[2]) for log_line in sample]
-        lin_acc_y = [float(log_line.split(",")[3]) for log_line in sample]
-        lin_acc_z = [float(log_line.split(",")[4]) for log_line in sample]
-        lin_acc_container.append([lin_acc_x, lin_acc_y, lin_acc_z])
-    gyro_container = []
-    for sample in gyro_samples:
-        gyro_x = [float(log_line.split(",")[2]) for log_line in sample]
-        gyro_y = [float(log_line.split(",")[3]) for log_line in sample]
-        gyro_z = [float(log_line.split(",")[4]) for log_line in sample]
-        gyro_container.append([gyro_x, gyro_y, gyro_z])
     pearson_coeff = []
-    for i in range(len(lin_acc_container)):  # The two containers have same len
-        pearson_axes = []
-        for j in range(len(lin_acc_container[i])):
-            pearson_axes.append(
-                stats.pearsonr(lin_acc_container[i][j], gyro_container[i][j])[0]
-            )
-        pearson_coeff.append(pearson_axes)
+    for tap_location_no in range(len(lin_acc_samples)):
+        lin_acc_location_sample = lin_acc_samples[tap_location_no]
+        gyro_location_sample = gyro_samples[tap_location_no]
+
+        lin_acc_container = []
+        for sample in lin_acc_location_sample:
+            lin_acc_x = [float(log_line.split(",")[2]) for log_line in sample]
+            lin_acc_y = [float(log_line.split(",")[3]) for log_line in sample]
+            lin_acc_z = [float(log_line.split(",")[4]) for log_line in sample]
+            lin_acc_container.append([lin_acc_x, lin_acc_y, lin_acc_z])
+        gyro_container = []
+        for sample in gyro_location_sample:
+            gyro_x = [float(log_line.split(",")[2]) for log_line in sample]
+            gyro_y = [float(log_line.split(",")[3]) for log_line in sample]
+            gyro_z = [float(log_line.split(",")[4]) for log_line in sample]
+            gyro_container.append([gyro_x, gyro_y, gyro_z])
+
+        for i in range(len(lin_acc_container)):  # Two containers have same len
+            sample_p_coeff = []
+            for j in range(len(lin_acc_container[0])):
+                sample_p_coeff.append(
+                    stats.pearsonr(lin_acc_container[i][0],
+                                   gyro_container[i][j])[0]
+                )
+            for j in range(len(lin_acc_container[0])):
+                sample_p_coeff.append(
+                    stats.pearsonr(lin_acc_container[i][1],
+                                   gyro_container[i][j])[0]
+                )
+            for j in range(len(lin_acc_container[0])):
+                sample_p_coeff.append(
+                    stats.pearsonr(lin_acc_container[i][2],
+                                   gyro_container[i][j])[0]
+                )
+            pearson_coeff.append(sample_p_coeff)
     return pearson_coeff
 
 
@@ -587,6 +603,8 @@ def featurize_combined(samples):
     return features
 
 
+# Functions to generate files---------------------------------------------------
+
 def make_tap_occurrence_data(file_name):
     """
     Creates the data file for tap occurrences in the format:
@@ -615,10 +633,15 @@ def make_tap_occurrence_data(file_name):
     gyro_p_samples = lhand_p_samples_gyro + rhand_p_samples_gyro
     gyro_p_features = featurize(gyro_p_samples)
 
+    # Get pearson correlation coefficients
+    pearson_p_features = get_pearson_coeff(lin_acc_p_samples, gyro_p_samples)
+
     # Synthesize positive tap features
     positive_features = []
     for i in range(len(lin_acc_p_features)):
-        positive_features.append(lin_acc_p_features[i] + gyro_p_features[i])
+        positive_features.append(lin_acc_p_features[i] +
+                                 gyro_p_features[i] +
+                                 pearson_p_features[i])
 
     # Negative linear accelerometer samples
     lin_acc_n_samples = lhand_n_samples_lin_acc + rhand_n_samples_lin_acc
@@ -627,10 +650,15 @@ def make_tap_occurrence_data(file_name):
     gyro_n_samples = lhand_n_samples_gyro + rhand_n_samples_gyro
     gyro_n_features = featurize(gyro_n_samples)
 
+    # Pearson correlation
+    pearson_n_features = get_pearson_coeff(lin_acc_n_samples, gyro_n_samples)
+
     # Synthesize negative tap features
     negative_features = []
     for i in range(len(lin_acc_n_features)):
-        negative_features.append(lin_acc_n_features[i] + gyro_n_features[i])
+        negative_features.append(lin_acc_n_features[i] +
+                                 gyro_n_features[i] +
+                                 pearson_n_features[i])
 
     # Now we write to the file.
     with open(
@@ -822,15 +850,21 @@ def make_hand_data_5p(file_name):
     rhand_lin_acc_features = featurize(rhand_p_samples_lin_acc)
     rhand_gyro_features = featurize(rhand_p_samples_gyro)
 
+    # Get pearson correlation coefficients
+    lhand_pearson_coeff = get_pearson_coeff(lhand_p_samples_lin_acc,
+                                            lhand_p_samples_gyro)
+    rhand_pearson_coeff = get_pearson_coeff(rhand_p_samples_lin_acc,
+                                            rhand_p_samples_gyro)
+
     lhand_features = []
     for i in range(len(lhand_lin_acc_features)):
         lhand_features.append([lhand_angles[i]] + lhand_lin_acc_features[i] +
-                              lhand_gyro_features[i])
+                              lhand_gyro_features[i] + lhand_pearson_coeff[i])
 
     rhand_features = []
     for i in range(len(rhand_lin_acc_features)):
         rhand_features.append([rhand_angles[i]] + rhand_lin_acc_features[i] +
-                              rhand_gyro_features[i])
+                              rhand_gyro_features[i] + rhand_pearson_coeff[i])
 
     # Now we write to the file.
     with open(
@@ -1088,10 +1122,22 @@ def make_left_hand_location_data(file_name):
     lin_acc_p_features = featurize(lhand_p_samples_lin_acc)
     gyro_p_features = featurize(lhand_p_samples_gyro)
 
+    # Angles not calculated in featurize() since only lin acc is relevant
+    lhand_angles = []
+    for tap_location_sample in lhand_p_samples_lin_acc:
+        lhand_angles = lhand_angles + get_angle(tap_location_sample)
+
+    # Pearson coefficients
+    # Get pearson correlation coefficients
+    lhand_pearson_coeff = get_pearson_coeff(lhand_p_samples_lin_acc,
+                                            lhand_p_samples_gyro)
     # Synthesize positive tap features
     positive_features = []
     for i in range(len(lin_acc_p_features)):
-        positive_features.append(lin_acc_p_features[i] + gyro_p_features[i])
+        positive_features.append([lhand_angles[i]] +
+                                 lin_acc_p_features[i] +
+                                 gyro_p_features[i] +
+                                 lhand_pearson_coeff[i])
 
     # Now we write to the file.
     with open(
@@ -1205,10 +1251,23 @@ def make_right_hand_location_data(file_name):
     lin_acc_p_features = featurize(rhand_p_samples_lin_acc)
     gyro_p_features = featurize(rhand_p_samples_gyro)
 
+    # Angles not calculated in featurize() since only lin acc is relevant
+    rhand_angles = []
+    for tap_location_sample in rhand_p_samples_lin_acc:
+        rhand_angles = rhand_angles + get_angle(tap_location_sample)
+
+    # Pearson coefficients
+    # Get pearson correlation coefficients
+    rhand_pearson_coeff = get_pearson_coeff(rhand_p_samples_lin_acc,
+                                            rhand_p_samples_gyro)
+
     # Synthesize positive tap features
     positive_features = []
     for i in range(len(lin_acc_p_features)):
-        positive_features.append(lin_acc_p_features[i] + gyro_p_features[i])
+        positive_features.append([rhand_angles[i]] +
+                                 lin_acc_p_features[i] +
+                                 gyro_p_features[i] +
+                                 rhand_pearson_coeff[i])
 
     # Now we write to the file.
     with open(
@@ -1309,7 +1368,7 @@ def make_right_hand_location_data_combined(file_name):
 
 clean_logs()
 
-make_tap_occurrence_data("tap_occurrence")
+# make_tap_occurrence_data("tap_occurrence")
 # make_tap_occurrence_data_new("tap_occurrence_new_features")
 # make_tap_occurrence_data_combined("tap_occurrence_combined")
 
@@ -1328,7 +1387,7 @@ make_tap_occurrence_data("tap_occurrence")
 # make_left_hand_location_data_new("location_lhand_new_features")
 # make_left_hand_location_data_combined("location_lhand_combined")
 
-# make_right_hand_location_data("location_rhand")
+make_right_hand_location_data("location_rhand")
 
 # make_right_hand_location_data_new("location_rhand_new_features")
 # make_right_hand_location_data_combined("location_rhand_combined")
