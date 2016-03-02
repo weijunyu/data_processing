@@ -3,10 +3,13 @@ import os
 from matplotlib import pyplot
 from scipy import stats
 
-x = [1,3,5,7]
-y = [17,13,19,1]
 
-print(stats.pearsonr(x,y))
+
+
+# x = [1,3,5,7]
+# y = [17,13,19,1]
+
+# print(stats.pearsonr(x,y))
 
 
 # pyplot.plot([1,2,3],[1,4,9], 'o')  # Vectors are x,y

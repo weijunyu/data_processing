@@ -55,17 +55,27 @@ for file in os.listdir():
         upper_bound = lower_bound + step  # initial bounds are -6 to 12
         params = (lower_bound, upper_bound,
                   lower_bound, upper_bound)
-        for i in range(4):
+        for i in range(5):
             results = cross_validate(params, file)
             percentage_list = [result[2] for result in results]
             max_percentage = max(percentage_list)
             max_percentage_index = percentage_list.index(max_percentage)
             optimal_params = results[max_percentage_index][:2]
-            step /= 3
+            step /= 2
             params = [
                 optimal_params[0] - step,
                 optimal_params[0] + step,
                 optimal_params[1] - step,
                 optimal_params[1] + step
             ]
-            pprint.pprint(results[max_percentage_index])
+
+        [c_power, gamma_power, accuracy] = results[max_percentage_index]
+        pprint.pprint(results[max_percentage_index])
+        cost = 2 ** c_power
+        gamma = 2 ** gamma_power
+        subprocess.run(['svm-train.exe',
+                        '-c', str(cost),  # Cost
+                        '-g', str(gamma),  # Gamma in kernel function
+                        '-b', '1',
+                        file],
+                       stdout=subprocess.PIPE)

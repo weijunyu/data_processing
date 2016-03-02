@@ -1369,6 +1369,7 @@ def make_right_hand_location_data_combined(file_name):
 clean_logs()
 
 # make_tap_occurrence_data("tap_occurrence")
+
 # make_tap_occurrence_data_new("tap_occurrence_new_features")
 # make_tap_occurrence_data_combined("tap_occurrence_combined")
 
@@ -1382,7 +1383,7 @@ clean_logs()
 # make_hand_data_5p_angle("hand_5p_angles_only")
 # make_hand_data_5p_combined("hand_5p_combined")
 
-# make_left_hand_location_data("location_lhand")
+make_left_hand_location_data("location_lhand")
 
 # make_left_hand_location_data_new("location_lhand_new_features")
 # make_left_hand_location_data_combined("location_lhand_combined")
