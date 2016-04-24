@@ -195,13 +195,13 @@ def get_sample_mean(tap_location_samples):
         tap_location_means.append(
                 [
                     statistics.mean(
-                        [abs(float(log_line.split(",")[2])) for log_line in sample]
+                        [float(log_line.split(",")[2]) for log_line in sample]
                     ),
                     statistics.mean(
-                        [abs(float(log_line.split(",")[3])) for log_line in sample]
+                        [float(log_line.split(",")[3]) for log_line in sample]
                     ),
                     statistics.mean(
-                        [abs(float(log_line.split(",")[4])) for log_line in sample]
+                        [float(log_line.split(",")[4]) for log_line in sample]
                     ),
                 ]
         )
@@ -1383,12 +1383,12 @@ clean_logs()
 # make_hand_data_5p_angle("hand_5p_angles_only")
 # make_hand_data_5p_combined("hand_5p_combined")
 
-make_left_hand_location_data("location_lhand")
+# make_left_hand_location_data("location_lhand")
 
 # make_left_hand_location_data_new("location_lhand_new_features")
 # make_left_hand_location_data_combined("location_lhand_combined")
 
-make_right_hand_location_data("location_rhand")
+# make_right_hand_location_data("location_rhand")
 
 # make_right_hand_location_data_new("location_rhand_new_features")
 # make_right_hand_location_data_combined("location_rhand_combined")

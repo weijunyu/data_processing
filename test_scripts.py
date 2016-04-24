@@ -1,10 +1,30 @@
-import os
+from make_training_file import get_sample_mean
+from make_training_file import get_sample_kurtosis
+from make_training_file import get_sample_skew
 
-from matplotlib import pyplot
-from scipy import stats
+lin_acc_sample = [[
+    "0,0,3,55,12",
+    "0,0,4,14,33",
+    "0,0,22,12,8"
 
+]]
 
+gyro_sample = [[
+    "0,0,-1,8,55",
+    "0,0,0,18,4",
+    "0,0,2,66,8"
+]]
 
+print(get_sample_mean(lin_acc_sample))
+print(get_sample_mean(gyro_sample))
+
+print(get_sample_skew(lin_acc_sample))
+print(get_sample_skew(gyro_sample))
+
+# import os
+#
+# from matplotlib import pyplot
+# from scipy import stats
 
 # x = [1,3,5,7]
 # y = [17,13,19,1]
