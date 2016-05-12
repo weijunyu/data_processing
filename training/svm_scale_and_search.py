@@ -35,6 +35,7 @@ def cross_validate(parameters, file):
 for file in os.listdir():
     file_name, file_ext = os.path.splitext(file)
     if file_ext == ".unscaled":
+        print("scaling " + file)
         subprocess.run(['svm-scale.exe', '-s',
                         'range_' + file_name,
                         file,
