@@ -3,17 +3,28 @@ from make_training_file import get_sample_kurtosis
 from make_training_file import get_sample_skew
 
 lin_acc_sample = [[
-    "0,0,3,55,12",
-    "0,0,4,14,33",
-    "0,0,22,12,8"
-
+    "2,9,3,55,12",
+    "1,-3,4,14,33",
+    "-4,16,22,12,8"
 ]]
 
 gyro_sample = [[
-    "0,0,-1,8,55",
-    "0,0,0,18,4",
+    "3,0,-1,8,55",
+    ",0,0,18,4",
     "0,0,2,66,8"
 ]]
+
+# Things to test for tap detection:
+# 1. mean
+# 2. standard dev
+# 3. skewness
+# 4. kurtosis
+# 5. l1 norm
+# 6. infinite norm
+# 7. frobenius norm
+# 8. pearson coefficients
+
+
 
 print(get_sample_mean(lin_acc_sample))
 print(get_sample_mean(gyro_sample))
