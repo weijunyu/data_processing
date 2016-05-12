@@ -1,6 +1,6 @@
-from make_training_file import get_sample_mean
-from make_training_file import get_sample_kurtosis
-from make_training_file import get_sample_skew
+# import make_training_file
+
+from scipy import stats
 
 lin_acc_sample = [[
     "1454432615403, 1, -0.5762239694595337, 0.16243454813957214,0.0730307474732399",
@@ -24,8 +24,52 @@ gyro_sample = [[
 # 7. frobenius norm
 # 8. pearson coefficients
 
-print(get_sample_mean(lin_acc_sample))
-print(get_sample_skew(lin_acc_sample))
+
+def test_get_pearsonr(lin_acc_sample, gyro_sample):
+    lin_acc_container = []
+    for sample in lin_acc_sample:
+        lin_acc_x = [float(log_line.split(",")[2]) for log_line in sample]
+        lin_acc_y = [float(log_line.split(",")[3]) for log_line in sample]
+        lin_acc_z = [float(log_line.split(",")[4]) for log_line in sample]
+        lin_acc_container.append([lin_acc_x, lin_acc_y, lin_acc_z])
+    gyro_container = []
+    for sample in gyro_sample:
+        gyro_x = [float(log_line.split(",")[2]) for log_line in sample]
+        gyro_y = [float(log_line.split(",")[3]) for log_line in sample]
+        gyro_z = [float(log_line.split(",")[4]) for log_line in sample]
+        gyro_container.append([gyro_x, gyro_y, gyro_z])
+
+    pearson_coeff = []
+    for i in range(len(lin_acc_container)):  # Two containers have same len
+        sample_p_coeff = []
+        for j in range(len(lin_acc_container[0])):  # 0-2
+            # lin acc x to gyro x/y/z
+            sample_p_coeff.append(
+                stats.pearsonr(lin_acc_container[i][0],
+                               gyro_container[i][j])[0]
+            )
+        for j in range(len(lin_acc_container[0])):
+            sample_p_coeff.append(
+                stats.pearsonr(lin_acc_container[i][1],
+                               gyro_container[i][j])[0]
+            )
+        for j in range(len(lin_acc_container[0])):
+            sample_p_coeff.append(
+                stats.pearsonr(lin_acc_container[i][2],
+                               gyro_container[i][j])[0]
+            )
+        pearson_coeff.append(sample_p_coeff)
+    return pearson_coeff
+
+
+# print(make_training_file.get_sample_mean(lin_acc_sample))
+# print(make_training_file.get_sample_std_dev(lin_acc_sample))
+# print(make_training_file.get_sample_skew(lin_acc_sample))
+# print(make_training_file.get_sample_kurtosis(lin_acc_sample))
+# print(make_training_file.get_l1_norm(lin_acc_sample))
+# print(make_training_file.get_inf_norm(lin_acc_sample))
+# print(make_training_file.get_fro_norm(lin_acc_sample))
+# print(test_get_pearsonr(lin_acc_sample, gyro_sample))
 
 # import os
 #

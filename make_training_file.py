@@ -367,7 +367,7 @@ def get_pearson_coeff(lin_acc_samples, gyro_samples):
     """
     # Get array of x, y, and z linear acceleration values
     pearson_coeff = []
-    for tap_location_no in range(len(lin_acc_samples)):
+    for tap_location_no in range(len(lin_acc_samples)):  # 10 locations, 5 for each hand
         lin_acc_location_sample = lin_acc_samples[tap_location_no]
         gyro_location_sample = gyro_samples[tap_location_no]
 
@@ -386,7 +386,8 @@ def get_pearson_coeff(lin_acc_samples, gyro_samples):
 
         for i in range(len(lin_acc_container)):  # Two containers have same len
             sample_p_coeff = []
-            for j in range(len(lin_acc_container[0])):
+            for j in range(len(lin_acc_container[0])):  # 0-2
+                # lin acc x to gyro x/y/z
                 sample_p_coeff.append(
                     stats.pearsonr(lin_acc_container[i][0],
                                    gyro_container[i][j])[0]
@@ -1368,7 +1369,7 @@ def make_right_hand_location_data_combined(file_name):
 
 clean_logs()
 
-# make_tap_occurrence_data("tap_occurrence")
+make_tap_occurrence_data("tap_occurrence")
 
 # make_tap_occurrence_data_new("tap_occurrence_new_features")
 # make_tap_occurrence_data_combined("tap_occurrence_combined")
