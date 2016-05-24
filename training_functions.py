@@ -161,7 +161,7 @@ def get_peak_value_sign(tap_location_samples):
     return peak_value_signs
 
 
-def get_rms(tap_location_samples):
+def get_sample_rms(tap_location_samples):
     rms_values = []
     for sample in tap_location_samples:
         squared_x_values = [
@@ -181,6 +181,26 @@ def get_rms(tap_location_samples):
         rms_z = math.sqrt(mean_squared_z)
         rms_values.append([rms_x, rms_y, rms_z])
     return rms_values
+
+
+def get_sample_max(tap_location_samples):
+    max_values = []
+    for sample in tap_location_samples:
+        x_max = max([float(log_line.split(",")[2]) for log_line in sample])
+        y_max = max([float(log_line.split(",")[3]) for log_line in sample])
+        z_max = max([float(log_line.split(",")[4]) for log_line in sample])
+        max_values.append([x_max, y_max, z_max])
+    return max_values
+
+
+def get_sample_min(tap_location_samples):
+    min_values = []
+    for sample in tap_location_samples:
+        x_min = min([float(log_line.split(",")[2]) for log_line in sample])
+        y_min = min([float(log_line.split(",")[3]) for log_line in sample])
+        z_min = min([float(log_line.split(",")[4]) for log_line in sample])
+        min_values.append([x_min, y_min, z_min])
+    return min_values
 
 
 def get_sample_mean(tap_location_samples):
@@ -412,72 +432,73 @@ def get_pearson_coeff(lin_acc_samples, gyro_samples):
     return pearson_coeff
 
 
-def get_positive_tap_samples(sensor, hand):
+def get_positive_tap_samples(hand):
     """
-    Returns lists of sensor values corresponding to a 300ms window containing
-    the largest absolute acceleration value from each tap.
-    :param sensor: Which sensor the data corresponds to.
-    :param hand: Which holding hand the data corresponds to.
-    :return: A list of positive samples for each tap point. Each positive sample
-    contains 15 data points (15 * 20ms = 300ms) starting from the moment the
-    highest x-y L2-norm values are captured.
+    :return A list of the linear accelerometer and gyroscope positive tap samples
     """
-    # Get sensor data for all tap locations
-    if sensor == LINEAR_ACCELEROMETER:
-        if hand == LEFT_HAND:
-            raw_logs = process_logs.process_5p_left_hand_lin_acc()
-        elif hand == RIGHT_HAND:
-            raw_logs = process_logs.process_5p_right_hand_lin_acc()
-        else:
-            print("Please use a valid hand position")
-            return "Invalid hand position"
-    elif sensor == GYROSCOPE:
-        if hand == LEFT_HAND:
-            raw_logs = process_logs.process_5p_left_hand_gyroscope()
-        elif hand == RIGHT_HAND:
-            raw_logs = process_logs.process_5p_right_hand_gyroscope()
-        else:
-            print("Please use a valid hand position")
-            return "Invalid hand position"
+    if hand == LEFT_HAND:
+        raw_lin_acc_logs = process_logs.process_5p_left_hand_lin_acc()
+        raw_gyro_logs = process_logs.process_5p_left_hand_gyroscope()
+    elif hand == RIGHT_HAND:
+        raw_lin_acc_logs = process_logs.process_5p_right_hand_lin_acc()
+        raw_gyro_logs = process_logs.process_5p_right_hand_gyroscope()
     else:
-        print("Sensor type invalid.")
-        return "Invalid sensor type."
+        print("Invalid hand position.")
+        return
 
-    positive_samples = []
-    for tap_number in range(len(raw_logs)):  # Tap locations 0 - 4
-        current_location_log = raw_logs[tap_number]
-        if tap_number == len(raw_logs) - 1:  # Next point is 0 if current is 4
-            next_location_log = raw_logs[0]
+    # positive_samples = []  # should get this to contain [lin_acc_samples, gyro_samples]
+
+    lin_acc_samples = []  # contains positive lin acc samples for each location
+    gyro_samples = []  # contains positive gyro samples for each location
+    for tap_number in range(len(raw_lin_acc_logs)):  # Tap locations 0 - 4
+        positive_lin_acc = []
+        positive_gyro = []
+        cur_location_lin_acc = raw_lin_acc_logs[tap_number]
+        cur_location_gyro = raw_gyro_logs[tap_number]
+        if tap_number == len(raw_lin_acc_logs) - 1:  # Next point is 0 if current is 4
+            next_location_lin_acc = raw_lin_acc_logs[0]
+            next_location_gyro = raw_gyro_logs[0]
         else:
-            next_location_log = raw_logs[tap_number + 1]
+            next_location_lin_acc = raw_lin_acc_logs[tap_number + 1]
+            next_location_gyro = raw_gyro_logs[tap_number + 1]
 
-        cur_location_samples = []  # Holds all samples for current tap location
+        # cur_location_samples = []  # Holds all samples for current tap location
         highest_log_indices = []
-        max_magnitude_lines = get_highest_lines(current_location_log)
+        max_magnitude_lines = get_highest_lines(cur_location_lin_acc)
 
         # Get indices of all the highest sensor magnitude log entries.
         for line in max_magnitude_lines:
             [highest_log_indices.append(data_window.index(line)) for
-             data_window in current_location_log if line in data_window]
+             data_window in cur_location_lin_acc if line in data_window]
 
         # Get positive samples as highest value log + the next 29 log entries
         last_entry_indices = [index + 15 for index in highest_log_indices]
         # For each data window for current tap location
-        for i in range(len(current_location_log)):
+        for i in range(len(cur_location_lin_acc)):
             # If the positive sample requirement exceeds the data window
-            if last_entry_indices[i] > len(current_location_log[i]):
-                first_half_sample = current_location_log[i][highest_log_indices[i]:last_entry_indices[i]]
+            if last_entry_indices[i] > len(cur_location_lin_acc[i]):
+                first_half_lin_acc = cur_location_lin_acc[i][highest_log_indices[i]:last_entry_indices[i]]
+                first_half_gyro = cur_location_gyro[i][highest_log_indices[i]:last_entry_indices[i]]
+
                 # If point 5, the second half of sample comes from point 1 in the next log
                 # TODO: Potential bug where the last entry for point 5 has no next log at location 1 (Very unlikely)
-                if tap_number == len(raw_logs) - 1:
-                    second_half_sample = next_location_log[i + 1][:last_entry_indices[i] - len(current_location_log[i])]
+                if tap_number == len(raw_lin_acc_logs) - 1: #  if tap number == 4
+                    second_half_lin_acc = next_location_lin_acc[i + 1][:last_entry_indices[i] - len(cur_location_lin_acc[i])]
+                    second_half_gyro = next_location_gyro[i + 1][:last_entry_indices[i] - len(cur_location_gyro[i])]
                 else:
-                    second_half_sample = next_location_log[i][:(last_entry_indices[i] - len(current_location_log[i]))]
-                full_sample = first_half_sample + second_half_sample
-                cur_location_samples.append(full_sample)
+                    second_half_lin_acc = next_location_lin_acc[i][:(last_entry_indices[i] - len(cur_location_lin_acc[i]))]
+                    second_half_gyro = next_location_gyro[i][:(last_entry_indices[i] - len(cur_location_gyro[i]))]
+                full_lin_acc = first_half_lin_acc + second_half_lin_acc
+                full_gyro = first_half_gyro + second_half_gyro
+                positive_lin_acc.append(full_lin_acc)
+                positive_gyro.append(full_gyro)
             else:
-                cur_location_samples.append(current_location_log[i][highest_log_indices[i]:last_entry_indices[i]])
-        positive_samples.append(cur_location_samples)
+                positive_lin_acc.append(cur_location_lin_acc[i][highest_log_indices[i]:last_entry_indices[i]])
+                positive_gyro.append(cur_location_gyro[i][highest_log_indices[i]:last_entry_indices[i]])
+
+        lin_acc_samples.append(positive_lin_acc)
+        gyro_samples.append(positive_gyro)
+        # positive_samples.append(cur_location_samples)
 
     # Simple check to ensure each positive sample contains 15 data points.
     # print(len(positive_samples))
@@ -485,76 +506,150 @@ def get_positive_tap_samples(sensor, hand):
     #     print(len(tap_location))
     #     print(statistics.mean([len(sample) for sample in tap_location]))
 
-    return positive_samples
+    return [lin_acc_samples, gyro_samples]
 
 
-def get_negative_tap_samples(sensor, hand):
+def get_negative_tap_samples_balanced(hand):
     """
-    Returns lists of sensor values corresponding to a 300ms window that is
-    a distance away from a positive sample.
-    :param sensor: Which sensor the data corresponds to.
-    :param hand: Which holding hand the data corresponds to.
-    :return: A list of positive samples for each tap point. Each positive sample
-    contains 15 data points (15 * 20ms = 300ms) starting from the moment the
-    highest x-y L2-norm values are captured.
+    Gives the same number of negative samples as positive ones
     """
     # Get sensor data for all tap locations
-    if sensor == LINEAR_ACCELEROMETER:
-        if hand == LEFT_HAND:
-            raw_logs = process_logs.process_5p_left_hand_lin_acc()
-        elif hand == RIGHT_HAND:
-            raw_logs = process_logs.process_5p_right_hand_lin_acc()
-        else:
-            print("Please use a valid hand position")
-            return "Invalid hand position"
-    elif sensor == GYROSCOPE:
-        if hand == LEFT_HAND:
-            raw_logs = process_logs.process_5p_left_hand_gyroscope()
-        elif hand == RIGHT_HAND:
-            raw_logs = process_logs.process_5p_right_hand_gyroscope()
-        else:
-            print("Please use a valid hand position")
-            return "Invalid hand position"
+    if hand == LEFT_HAND:
+        raw_lin_acc_logs = process_logs.process_5p_left_hand_lin_acc()
+        raw_gyro_logs = process_logs.process_5p_left_hand_gyroscope()
+    elif hand == RIGHT_HAND:
+        raw_lin_acc_logs = process_logs.process_5p_right_hand_lin_acc()
+        raw_gyro_logs = process_logs.process_5p_right_hand_gyroscope()
     else:
-        print("Sensor type invalid.")
-        return "Invalid sensor type."
+        print("Invalid hand position.")
+        return
 
-    negative_samples = []
-    for tap_number in range(len(raw_logs)):  # Tap locations 0 - 4
-        current_location_log = raw_logs[tap_number]
+    lin_acc_samples = []
+    gyro_samples = []
+    for tap_number in range(len(raw_lin_acc_logs)):  # Tap locations 0 - 4
+        cur_location_lin_acc = raw_lin_acc_logs[tap_number]
+        cur_location_gyro = raw_gyro_logs[tap_number]
+
+        negative_lin_acc = []
+        negative_gyro = []
 
         # Get indices of all the highest sensor magnitude log entries.
         highest_log_indices = []
-        max_magnitude_lines = get_highest_lines(current_location_log)
+        max_magnitude_lines = get_highest_lines(cur_location_lin_acc)
         for line in max_magnitude_lines:
             [highest_log_indices.append(data_window.index(line)) for
-             data_window in current_location_log if line in data_window]
+             data_window in cur_location_lin_acc if line in data_window]
 
-        cur_location_samples = []  # Holds all samples for current tap location
-        for i in range(len(current_location_log)):
+        for i in range(len(cur_location_lin_acc)):
             # For each data window
-            if highest_log_indices[i] < len(current_location_log[i]) - \
-                    15 - 10 - 15:
-                starting_index = highest_log_indices[i] + 15 + 10
-                ending_index = starting_index + 15
-                sample = \
-                    current_location_log[i][starting_index:ending_index]
-                cur_location_samples.append(sample)
+            # if highest_log_indices[i] < len(current_location_log[i]) - \
+            #         15 - 10 - 15:
+            # Negative samples outside of the tapping motion
+            if highest_log_indices[i] < len(cur_location_lin_acc[i]) - 45:
+                starting_index = highest_log_indices[i] + 30
             else:
-                starting_index = highest_log_indices[i] - 10 - 15
+                starting_index = highest_log_indices[i] - 30
+
+            ending_index = starting_index + 15
+            lin_acc_sample = cur_location_lin_acc[i][starting_index:ending_index]
+            gyro_sample = cur_location_gyro[i][starting_index:ending_index]
+
+            negative_lin_acc.append(lin_acc_sample)
+            negative_gyro.append(gyro_sample)
+
+        lin_acc_samples.append(negative_lin_acc)
+        gyro_samples.append(negative_gyro)
+    return [lin_acc_samples, gyro_samples]
+
+
+def get_negative_tap_samples_full(hand):
+    """
+    Gives 3 times negative samples compared to positive ones
+    """
+
+    # Get sensor data for all tap locations
+    if hand == LEFT_HAND:
+        raw_lin_acc_logs = process_logs.process_5p_left_hand_lin_acc()
+        raw_gyro_logs = process_logs.process_5p_left_hand_gyroscope()
+    elif hand == RIGHT_HAND:
+        raw_lin_acc_logs = process_logs.process_5p_right_hand_lin_acc()
+        raw_gyro_logs = process_logs.process_5p_right_hand_gyroscope()
+    else:
+        print("Invalid hand position.")
+        return
+
+    # Correction:
+    # 1. Get lin acc logs AND gyro logs
+    # 2. Make samples depending on get_highest_lines for lin_acc_logs
+
+    lin_acc_samples = []
+    gyro_samples = []
+    for tap_number in range(len(raw_lin_acc_logs)):  # Tap locations 0 - 4
+        cur_location_lin_acc = raw_lin_acc_logs[tap_number]
+        cur_location_gyro = raw_gyro_logs[tap_number]
+
+        negative_lin_acc = []
+        negative_gyro = []
+
+        # Get indices of all the highest sensor magnitude log entries.
+        highest_log_indices = []
+        max_magnitude_lines = get_highest_lines(cur_location_lin_acc)
+        for line in max_magnitude_lines:
+            [highest_log_indices.append(data_window.index(line)) for
+             data_window in cur_location_lin_acc if line in data_window]
+
+        for i in range(len(cur_location_lin_acc)):
+            # For each data window
+            # if highest_log_indices[i] < len(current_location_log[i]) - \
+            #         15 - 10 - 15:
+            # Negative samples outside of the tapping motion
+            if highest_log_indices[i] < len(cur_location_lin_acc[i]) - 45:
+                starting_index = highest_log_indices[i] + 30
+            else:
+                starting_index = highest_log_indices[i] - 30
+
+            ending_index = starting_index + 15
+            lin_acc_sample = cur_location_lin_acc[i][starting_index:ending_index]
+            gyro_sample = cur_location_gyro[i][starting_index:ending_index]
+            negative_lin_acc.append(lin_acc_sample)
+            negative_gyro.append(gyro_sample)
+
+            # Negative samples from the first half of the motion
+            starting_index = highest_log_indices[i] - 7
+            if starting_index > 0:
                 ending_index = starting_index + 15
-                sample = \
-                    current_location_log[i][starting_index:ending_index]
-                cur_location_samples.append(sample)
-        negative_samples.append(cur_location_samples)
+                lin_acc_sample = cur_location_lin_acc[i][starting_index:ending_index]
+                gyro_sample = cur_location_gyro[i][starting_index:ending_index]
+            else:
+                first_half_lin_acc = cur_location_lin_acc[i - 1][starting_index:]
+                first_half_gyro = cur_location_gyro[i - 1][starting_index:]
+                second_half_lin_acc = cur_location_lin_acc[i][:highest_log_indices[i]]
+                second_half_gyro = cur_location_gyro[i][:highest_log_indices[i]]
+                lin_acc_sample = first_half_lin_acc + second_half_lin_acc
+                gyro_sample = first_half_gyro + second_half_gyro
+            negative_lin_acc.append(lin_acc_sample)
+            negative_gyro.append(gyro_sample)
 
-    # Simple check to ensure each positive sample contains 15 data points.
-    # print(len(negative_samples))
-    # for tap_location in negative_samples:
-    #     print(len(tap_location))
-    #     print(statistics.mean([len(sample) for sample in tap_location]))
+            # Negative samples from the second half of the motion
+            starting_index = highest_log_indices[i] + 7
+            if starting_index < len(cur_location_lin_acc[i]) - 15:
+                ending_index = starting_index + 15
+                lin_acc_sample = cur_location_lin_acc[i][starting_index:ending_index]
+                gyro_sample = cur_location_gyro[i][starting_index:ending_index]
+            else:
+                first_half_lin_acc = cur_location_lin_acc[i][starting_index:]
+                first_half_gyro = cur_location_gyro[i][starting_index:]
+                second_half_lin_acc = cur_location_lin_acc[i + 1][:len(cur_location_lin_acc[i]) - starting_index]
+                second_half_gyro = cur_location_gyro[i + 1][:len(cur_location_gyro[i]) - starting_index]
+                lin_acc_sample = first_half_lin_acc + second_half_lin_acc
+                gyro_sample = first_half_gyro + second_half_gyro
+            negative_lin_acc.append(lin_acc_sample)
+            negative_gyro.append(gyro_sample)
 
-    return negative_samples
+        lin_acc_samples.append(negative_lin_acc)
+        gyro_samples.append(negative_gyro)
+
+    return [lin_acc_samples, gyro_samples]
 
 
 def featurize(samples):
@@ -575,17 +670,17 @@ def featurize(samples):
     return features
 
 
-def featurize_new(samples):
-    features = []
-    for tap_location_sample in samples:
-        p2p = get_sample_p2p(tap_location_sample)
-        sign = get_peak_value_sign(tap_location_sample)
-        rms = get_rms(tap_location_sample)
-        for i in range(len(p2p)):
-            features.append(
-                p2p[i] + sign[i] + rms[i]
-            )
-    return features
+# def featurize_new(samples):
+#     features = []
+#     for tap_location_sample in samples:
+#         p2p = get_sample_p2p(tap_location_sample)
+#         sign = get_peak_value_sign(tap_location_sample)
+#         rms = get_sample_rms(tap_location_sample)
+#         for i in range(len(p2p)):
+#             features.append(
+#                 p2p[i] + sign[i] + rms[i]
+#             )
+#     return features
 
 
 def featurize_combined(samples):
@@ -598,14 +693,15 @@ def featurize_combined(samples):
         l1_norm = get_l1_norm(tap_location_sample)
         inf_norm = get_inf_norm(tap_location_sample)
         fro_norm = get_fro_norm(tap_location_sample)
+        rms = get_sample_rms(tap_location_sample)
         p2p = get_sample_p2p(tap_location_sample)
-        sign = get_peak_value_sign(tap_location_sample)
-        rms = get_rms(tap_location_sample)
+        min_values = get_sample_min(tap_location_sample)
+        max_values = get_sample_max(tap_location_sample)
         for i in range(len(means)):
             features.append(
                 means[i] + std_dev[i] + skew[i] + kurtosis[i] +
                 [l1_norm[i], inf_norm[i], fro_norm[i]] +
-                p2p[i] + sign[i] + rms[i]
+                rms[i] + p2p[i] + min_values[i] + max_values[i]
             )
     return features
 
@@ -619,19 +715,12 @@ def make_tap_occurrence_data(file_name):
     :param file_name: Name of training file to be written
     :return:
     """
-    # Get positive and negative samples
-    lhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
-                                                       LEFT_HAND)
-    lhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, LEFT_HAND)
-    rhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
-                                                       RIGHT_HAND)
-    rhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, RIGHT_HAND)
-    lhand_n_samples_lin_acc = get_negative_tap_samples(LINEAR_ACCELEROMETER,
-                                                       LEFT_HAND)
-    lhand_n_samples_gyro = get_negative_tap_samples(GYROSCOPE, LEFT_HAND)
-    rhand_n_samples_lin_acc = get_negative_tap_samples(LINEAR_ACCELEROMETER,
-                                                       RIGHT_HAND)
-    rhand_n_samples_gyro = get_negative_tap_samples(GYROSCOPE, RIGHT_HAND)
+    # Get positive samples
+    [lhand_p_samples_lin_acc, lhand_p_samples_gyro] = get_positive_tap_samples(LEFT_HAND)
+    [rhand_p_samples_lin_acc, rhand_p_samples_gyro] = get_positive_tap_samples(RIGHT_HAND)
+    # Get negative samples
+    [lhand_n_samples_lin_acc, lhand_n_samples_gyro] = get_negative_tap_samples_balanced(LEFT_HAND)
+    [rhand_n_samples_lin_acc, rhand_n_samples_gyro] = get_negative_tap_samples_balanced(RIGHT_HAND)
 
     # First do positive linear accelerometer samples
     lin_acc_p_samples = lhand_p_samples_lin_acc + rhand_p_samples_lin_acc
@@ -682,64 +771,64 @@ def make_tap_occurrence_data(file_name):
             file.write('\n')
 
 
-def make_tap_occurrence_data_new(file_name):
-    """
-    Creates the data file for tap occurrences in the format:
-    <[-1 for no tap or +1 for tap] <index1>:<x axis lin acc mean> ...
-    :param file_name: Name of training file to be written
-    :return:
-    """
-    # Get positive and negative samples
-    lhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
-                                                       LEFT_HAND)
-    lhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, LEFT_HAND)
-    rhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
-                                                       RIGHT_HAND)
-    rhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, RIGHT_HAND)
-    lhand_n_samples_lin_acc = get_negative_tap_samples(LINEAR_ACCELEROMETER,
-                                                       LEFT_HAND)
-    lhand_n_samples_gyro = get_negative_tap_samples(GYROSCOPE, LEFT_HAND)
-    rhand_n_samples_lin_acc = get_negative_tap_samples(LINEAR_ACCELEROMETER,
-                                                       RIGHT_HAND)
-    rhand_n_samples_gyro = get_negative_tap_samples(GYROSCOPE, RIGHT_HAND)
-
-    # First do positive linear accelerometer samples
-    lin_acc_p_samples = lhand_p_samples_lin_acc + rhand_p_samples_lin_acc
-    lin_acc_p_features = featurize_new(lin_acc_p_samples)
-    # Add on positive gyroscope samples
-    gyro_p_samples = lhand_p_samples_gyro + rhand_p_samples_gyro
-    gyro_p_features = featurize_new(gyro_p_samples)
-
-    # Synthesize positive tap features
-    positive_features = []
-    for i in range(len(lin_acc_p_features)):
-        positive_features.append(lin_acc_p_features[i] + gyro_p_features[i])
-
-    # Negative linear accelerometer samples
-    lin_acc_n_samples = lhand_n_samples_lin_acc + rhand_n_samples_lin_acc
-    lin_acc_n_features = featurize_new(lin_acc_n_samples)
-    # Negative gyro samples
-    gyro_n_samples = lhand_n_samples_gyro + rhand_n_samples_gyro
-    gyro_n_features = featurize_new(gyro_n_samples)
-
-    # Synthesize negative tap features
-    negative_features = []
-    for i in range(len(lin_acc_n_features)):
-        negative_features.append(lin_acc_n_features[i] + gyro_n_features[i])
-
-    # Now we write to the file.
-    with open(
-            "training/" + file_name + ".unscaled", 'w', encoding='utf-8') as file:
-        for feature_vector in positive_features:
-            file.write("+1 ")
-            for i in range(len(feature_vector)):
-                file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
-            file.write('\n')
-        for feature_vector in negative_features:
-            file.write("-1 ")
-            for i in range(len(feature_vector)):
-                file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
-            file.write('\n')
+# def make_tap_occurrence_data_new(file_name):
+#     """
+#     Creates the data file for tap occurrences in the format:
+#     <[-1 for no tap or +1 for tap] <index1>:<x axis lin acc mean> ...
+#     :param file_name: Name of training file to be written
+#     :return:
+#     """
+#     # Get positive and negative samples
+#     lhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
+#                                                        LEFT_HAND)
+#     lhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, LEFT_HAND)
+#     rhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
+#                                                        RIGHT_HAND)
+#     rhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, RIGHT_HAND)
+#     lhand_n_samples_lin_acc = get_negative_tap_samples_full(LINEAR_ACCELEROMETER,
+#                                                        LEFT_HAND)
+#     lhand_n_samples_gyro = get_negative_tap_samples_full(GYROSCOPE, LEFT_HAND)
+#     rhand_n_samples_lin_acc = get_negative_tap_samples_full(LINEAR_ACCELEROMETER,
+#                                                        RIGHT_HAND)
+#     rhand_n_samples_gyro = get_negative_tap_samples_full(GYROSCOPE, RIGHT_HAND)
+#
+#     # First do positive linear accelerometer samples
+#     lin_acc_p_samples = lhand_p_samples_lin_acc + rhand_p_samples_lin_acc
+#     lin_acc_p_features = featurize_new(lin_acc_p_samples)
+#     # Add on positive gyroscope samples
+#     gyro_p_samples = lhand_p_samples_gyro + rhand_p_samples_gyro
+#     gyro_p_features = featurize_new(gyro_p_samples)
+#
+#     # Synthesize positive tap features
+#     positive_features = []
+#     for i in range(len(lin_acc_p_features)):
+#         positive_features.append(lin_acc_p_features[i] + gyro_p_features[i])
+#
+#     # Negative linear accelerometer samples
+#     lin_acc_n_samples = lhand_n_samples_lin_acc + rhand_n_samples_lin_acc
+#     lin_acc_n_features = featurize_new(lin_acc_n_samples)
+#     # Negative gyro samples
+#     gyro_n_samples = lhand_n_samples_gyro + rhand_n_samples_gyro
+#     gyro_n_features = featurize_new(gyro_n_samples)
+#
+#     # Synthesize negative tap features
+#     negative_features = []
+#     for i in range(len(lin_acc_n_features)):
+#         negative_features.append(lin_acc_n_features[i] + gyro_n_features[i])
+#
+#     # Now we write to the file.
+#     with open(
+#             "training/" + file_name + ".unscaled", 'w', encoding='utf-8') as file:
+#         for feature_vector in positive_features:
+#             file.write("+1 ")
+#             for i in range(len(feature_vector)):
+#                 file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
+#             file.write('\n')
+#         for feature_vector in negative_features:
+#             file.write("-1 ")
+#             for i in range(len(feature_vector)):
+#                 file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
+#             file.write('\n')
 
 
 def make_tap_occurrence_data_combined(file_name):
@@ -749,19 +838,12 @@ def make_tap_occurrence_data_combined(file_name):
     :param file_name: Name of training file to be written
     :return:
     """
-    # Get positive and negative samples
-    lhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
-                                                       LEFT_HAND)
-    lhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, LEFT_HAND)
-    rhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
-                                                       RIGHT_HAND)
-    rhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, RIGHT_HAND)
-    lhand_n_samples_lin_acc = get_negative_tap_samples(LINEAR_ACCELEROMETER,
-                                                       LEFT_HAND)
-    lhand_n_samples_gyro = get_negative_tap_samples(GYROSCOPE, LEFT_HAND)
-    rhand_n_samples_lin_acc = get_negative_tap_samples(LINEAR_ACCELEROMETER,
-                                                       RIGHT_HAND)
-    rhand_n_samples_gyro = get_negative_tap_samples(GYROSCOPE, RIGHT_HAND)
+    # Get positive samples
+    [lhand_p_samples_lin_acc, lhand_p_samples_gyro] = get_positive_tap_samples(LEFT_HAND)
+    [rhand_p_samples_lin_acc, rhand_p_samples_gyro] = get_positive_tap_samples(RIGHT_HAND)
+    # Get negative samples
+    [lhand_n_samples_lin_acc, lhand_n_samples_gyro] = get_negative_tap_samples_balanced(LEFT_HAND)
+    [rhand_n_samples_lin_acc, rhand_n_samples_gyro] = get_negative_tap_samples_balanced(RIGHT_HAND)
 
     # First do positive linear accelerometer samples
     lin_acc_p_samples = lhand_p_samples_lin_acc + rhand_p_samples_lin_acc
@@ -769,11 +851,15 @@ def make_tap_occurrence_data_combined(file_name):
     # Add on positive gyroscope samples
     gyro_p_samples = lhand_p_samples_gyro + rhand_p_samples_gyro
     gyro_p_features = featurize_combined(gyro_p_samples)
+    # Get pearson correlation coefficients
+    pearson_p_features = get_pearson_coeff(lin_acc_p_samples, gyro_p_samples)
 
     # Synthesize positive tap features
     positive_features = []
     for i in range(len(lin_acc_p_features)):
-        positive_features.append(lin_acc_p_features[i] + gyro_p_features[i])
+        positive_features.append(lin_acc_p_features[i] +
+                                 gyro_p_features[i] +
+                                 pearson_p_features[i])
 
     # Negative linear accelerometer samples
     lin_acc_n_samples = lhand_n_samples_lin_acc + rhand_n_samples_lin_acc
@@ -781,11 +867,15 @@ def make_tap_occurrence_data_combined(file_name):
     # Negative gyro samples
     gyro_n_samples = lhand_n_samples_gyro + rhand_n_samples_gyro
     gyro_n_features = featurize_combined(gyro_n_samples)
+    # Pearson correlation
+    pearson_n_features = get_pearson_coeff(lin_acc_n_samples, gyro_n_samples)
 
     # Synthesize negative tap features
     negative_features = []
     for i in range(len(lin_acc_n_features)):
-        negative_features.append(lin_acc_n_features[i] + gyro_n_features[i])
+        negative_features.append(lin_acc_n_features[i] +
+                                 gyro_n_features[i] +
+                                 pearson_n_features[i])
 
     # Now we write to the file.
     with open(
@@ -836,12 +926,8 @@ def make_hand_data_5p(file_name):
     :return:
     """
     # Get lists of data windows for left/right hand taps
-    lhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
-                                                       LEFT_HAND)
-    lhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, LEFT_HAND)
-    rhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
-                                                       RIGHT_HAND)
-    rhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, RIGHT_HAND)
+    [lhand_p_samples_lin_acc, lhand_p_samples_gyro] = get_positive_tap_samples(LEFT_HAND)
+    [rhand_p_samples_lin_acc, rhand_p_samples_gyro] = get_positive_tap_samples(RIGHT_HAND)
 
     # Angles not calculated in featurize() since only lin acc is relevant
     lhand_angles = []
@@ -888,174 +974,174 @@ def make_hand_data_5p(file_name):
             file.write('\n')
 
 
-def make_hand_data_5p_no_angles(file_name):
-    """
-    Creates the left/right hand training/testing file in the format:
-    <hand[-1 for left, +1 for right]> <index1>:<angle at max magnitude> ...
-    :param file_name: Name of training file to be written
-    :return:
-    """
-    # Get lists of data windows for left/right hand taps
-    lhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
-                                                       LEFT_HAND)
-    lhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, LEFT_HAND)
-    rhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
-                                                       RIGHT_HAND)
-    rhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, RIGHT_HAND)
-
-    # Other features
-    lhand_lin_acc_features = featurize(lhand_p_samples_lin_acc)
-    lhand_gyro_features = featurize(lhand_p_samples_gyro)
-    rhand_lin_acc_features = featurize(rhand_p_samples_lin_acc)
-    rhand_gyro_features = featurize(rhand_p_samples_gyro)
-
-    lhand_features = []
-    for i in range(len(lhand_lin_acc_features)):
-        lhand_features.append(lhand_lin_acc_features[i] +
-                              lhand_gyro_features[i])
-
-    rhand_features = []
-    for i in range(len(rhand_lin_acc_features)):
-        rhand_features.append(rhand_lin_acc_features[i] +
-                              rhand_gyro_features[i])
-
-    # Now we write to the file.
-    with open(
-            "training/" + file_name + ".unscaled", 'w', encoding='utf-8') as file:
-        for feature_vector in lhand_features:
-            file.write("+1 ")
-            for i in range(len(feature_vector)):
-                file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
-            file.write('\n')
-        for feature_vector in rhand_features:
-            file.write("-1 ")
-            for i in range(len(feature_vector)):
-                file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
-            file.write('\n')
-
-
-def make_hand_data_5p_new(file_name):
-    """
-    Creates the left/right hand training/testing file in the format:
-    <hand[-1 for left, +1 for right]> <index1>:<angle at max magnitude> ...
-    :param file_name: Name of training file to be written
-    :return:
-    """
-    # Get lists of data windows for left/right hand taps
-    lhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
-                                                       LEFT_HAND)
-    lhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, LEFT_HAND)
-    rhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
-                                                       RIGHT_HAND)
-    rhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, RIGHT_HAND)
-
-    # Angles not calculated in featurize() since only lin acc is relevant
-    lhand_angles = []
-    for tap_location_sample in lhand_p_samples_lin_acc:
-        lhand_angles = lhand_angles + get_angle(tap_location_sample)
-    rhand_angles = []
-    for tap_location_sample in rhand_p_samples_lin_acc:
-        rhand_angles = rhand_angles + get_angle(tap_location_sample)
-
-    # Other features
-    lhand_lin_acc_features = featurize_new(lhand_p_samples_lin_acc)
-    lhand_gyro_features = featurize_new(lhand_p_samples_gyro)
-    rhand_lin_acc_features = featurize_new(rhand_p_samples_lin_acc)
-    rhand_gyro_features = featurize_new(rhand_p_samples_gyro)
-
-    lhand_features = []
-    for i in range(len(lhand_lin_acc_features)):
-        lhand_features.append([lhand_angles[i]] + lhand_lin_acc_features[i] +
-                              lhand_gyro_features[i])
-
-    rhand_features = []
-    for i in range(len(rhand_lin_acc_features)):
-        rhand_features.append([rhand_angles[i]] + rhand_lin_acc_features[i] +
-                              rhand_gyro_features[i])
-
-    # Now we write to the file.
-    with open(
-            "training/" + file_name + ".unscaled", 'w', encoding='utf-8') as file:
-        for feature_vector in lhand_features:
-            file.write("+1 ")
-            for i in range(len(feature_vector)):
-                file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
-            file.write('\n')
-        for feature_vector in rhand_features:
-            file.write("-1 ")
-            for i in range(len(feature_vector)):
-                file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
-            file.write('\n')
+# def make_hand_data_5p_no_angles(file_name):
+#     """
+#     Creates the left/right hand training/testing file in the format:
+#     <hand[-1 for left, +1 for right]> <index1>:<angle at max magnitude> ...
+#     :param file_name: Name of training file to be written
+#     :return:
+#     """
+#     # Get lists of data windows for left/right hand taps
+#     lhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
+#                                                        LEFT_HAND)
+#     lhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, LEFT_HAND)
+#     rhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
+#                                                        RIGHT_HAND)
+#     rhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, RIGHT_HAND)
+#
+#     # Other features
+#     lhand_lin_acc_features = featurize(lhand_p_samples_lin_acc)
+#     lhand_gyro_features = featurize(lhand_p_samples_gyro)
+#     rhand_lin_acc_features = featurize(rhand_p_samples_lin_acc)
+#     rhand_gyro_features = featurize(rhand_p_samples_gyro)
+#
+#     lhand_features = []
+#     for i in range(len(lhand_lin_acc_features)):
+#         lhand_features.append(lhand_lin_acc_features[i] +
+#                               lhand_gyro_features[i])
+#
+#     rhand_features = []
+#     for i in range(len(rhand_lin_acc_features)):
+#         rhand_features.append(rhand_lin_acc_features[i] +
+#                               rhand_gyro_features[i])
+#
+#     # Now we write to the file.
+#     with open(
+#             "training/" + file_name + ".unscaled", 'w', encoding='utf-8') as file:
+#         for feature_vector in lhand_features:
+#             file.write("+1 ")
+#             for i in range(len(feature_vector)):
+#                 file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
+#             file.write('\n')
+#         for feature_vector in rhand_features:
+#             file.write("-1 ")
+#             for i in range(len(feature_vector)):
+#                 file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
+#             file.write('\n')
 
 
-def make_hand_data_5p_new_no_angles(file_name):
-    """
-    Creates the left/right hand training/testing file in the format:
-    <hand[-1 for left, +1 for right]> <index1>:<angle at max magnitude> ...
-    :param file_name: Name of training file to be written
-    :return:
-    """
-    # Get lists of data windows for left/right hand taps
-    lhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
-                                                       LEFT_HAND)
-    lhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, LEFT_HAND)
-    rhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
-                                                       RIGHT_HAND)
-    rhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, RIGHT_HAND)
+# def make_hand_data_5p_new(file_name):
+#     """
+#     Creates the left/right hand training/testing file in the format:
+#     <hand[-1 for left, +1 for right]> <index1>:<angle at max magnitude> ...
+#     :param file_name: Name of training file to be written
+#     :return:
+#     """
+#     # Get lists of data windows for left/right hand taps
+#     lhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
+#                                                        LEFT_HAND)
+#     lhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, LEFT_HAND)
+#     rhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
+#                                                        RIGHT_HAND)
+#     rhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, RIGHT_HAND)
+#
+#     # Angles not calculated in featurize() since only lin acc is relevant
+#     lhand_angles = []
+#     for tap_location_sample in lhand_p_samples_lin_acc:
+#         lhand_angles = lhand_angles + get_angle(tap_location_sample)
+#     rhand_angles = []
+#     for tap_location_sample in rhand_p_samples_lin_acc:
+#         rhand_angles = rhand_angles + get_angle(tap_location_sample)
+#
+#     # Other features
+#     lhand_lin_acc_features = featurize_new(lhand_p_samples_lin_acc)
+#     lhand_gyro_features = featurize_new(lhand_p_samples_gyro)
+#     rhand_lin_acc_features = featurize_new(rhand_p_samples_lin_acc)
+#     rhand_gyro_features = featurize_new(rhand_p_samples_gyro)
+#
+#     lhand_features = []
+#     for i in range(len(lhand_lin_acc_features)):
+#         lhand_features.append([lhand_angles[i]] + lhand_lin_acc_features[i] +
+#                               lhand_gyro_features[i])
+#
+#     rhand_features = []
+#     for i in range(len(rhand_lin_acc_features)):
+#         rhand_features.append([rhand_angles[i]] + rhand_lin_acc_features[i] +
+#                               rhand_gyro_features[i])
+#
+#     # Now we write to the file.
+#     with open(
+#             "training/" + file_name + ".unscaled", 'w', encoding='utf-8') as file:
+#         for feature_vector in lhand_features:
+#             file.write("+1 ")
+#             for i in range(len(feature_vector)):
+#                 file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
+#             file.write('\n')
+#         for feature_vector in rhand_features:
+#             file.write("-1 ")
+#             for i in range(len(feature_vector)):
+#                 file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
+#             file.write('\n')
 
-    # Features
-    lhand_lin_acc_features = featurize_new(lhand_p_samples_lin_acc)
-    lhand_gyro_features = featurize_new(lhand_p_samples_gyro)
-    rhand_lin_acc_features = featurize_new(rhand_p_samples_lin_acc)
-    rhand_gyro_features = featurize_new(rhand_p_samples_gyro)
 
-    lhand_features = []
-    for i in range(len(lhand_lin_acc_features)):
-        lhand_features.append(lhand_lin_acc_features[i] +
-                              lhand_gyro_features[i])
+# def make_hand_data_5p_new_no_angles(file_name):
+#     """
+#     Creates the left/right hand training/testing file in the format:
+#     <hand[-1 for left, +1 for right]> <index1>:<angle at max magnitude> ...
+#     :param file_name: Name of training file to be written
+#     :return:
+#     """
+#     # Get lists of data windows for left/right hand taps
+#     lhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
+#                                                        LEFT_HAND)
+#     lhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, LEFT_HAND)
+#     rhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
+#                                                        RIGHT_HAND)
+#     rhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, RIGHT_HAND)
+#
+#     # Features
+#     lhand_lin_acc_features = featurize_new(lhand_p_samples_lin_acc)
+#     lhand_gyro_features = featurize_new(lhand_p_samples_gyro)
+#     rhand_lin_acc_features = featurize_new(rhand_p_samples_lin_acc)
+#     rhand_gyro_features = featurize_new(rhand_p_samples_gyro)
+#
+#     lhand_features = []
+#     for i in range(len(lhand_lin_acc_features)):
+#         lhand_features.append(lhand_lin_acc_features[i] +
+#                               lhand_gyro_features[i])
+#
+#     rhand_features = []
+#     for i in range(len(rhand_lin_acc_features)):
+#         rhand_features.append(rhand_lin_acc_features[i] +
+#                               rhand_gyro_features[i])
+#
+#     # Now we write to the file.
+#     with open(
+#             "training/" + file_name + ".unscaled", 'w', encoding='utf-8') as file:
+#         for feature_vector in lhand_features:
+#             file.write("+1 ")
+#             for i in range(len(feature_vector)):
+#                 file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
+#             file.write('\n')
+#         for feature_vector in rhand_features:
+#             file.write("-1 ")
+#             for i in range(len(feature_vector)):
+#                 file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
+#             file.write('\n')
 
-    rhand_features = []
-    for i in range(len(rhand_lin_acc_features)):
-        rhand_features.append(rhand_lin_acc_features[i] +
-                              rhand_gyro_features[i])
 
-    # Now we write to the file.
-    with open(
-            "training/" + file_name + ".unscaled", 'w', encoding='utf-8') as file:
-        for feature_vector in lhand_features:
-            file.write("+1 ")
-            for i in range(len(feature_vector)):
-                file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
-            file.write('\n')
-        for feature_vector in rhand_features:
-            file.write("-1 ")
-            for i in range(len(feature_vector)):
-                file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
-            file.write('\n')
-
-
-def make_hand_data_5p_angle(file_name):
-    # Get lists of data windows for left/right hand taps
-    lhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
-                                                       LEFT_HAND)
-    rhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
-                                                       RIGHT_HAND)
-
-    # Get angles from linear accelerometer
-    lhand_angles = []
-    for tap_location_sample in lhand_p_samples_lin_acc:
-        lhand_angles = lhand_angles + get_angle(tap_location_sample)
-    rhand_angles = []
-    for tap_location_sample in rhand_p_samples_lin_acc:
-        rhand_angles = rhand_angles + get_angle(tap_location_sample)
-
-    # Write to training file
-    with open("training/" + file_name + ".unscaled", 'w', encoding='utf-8') as \
-            file:
-        for angle_sample in lhand_angles:
-            file.write("+1 1:" + str(angle_sample) + '\n')
-        for angle_sample in rhand_angles:
-            file.write("-1 1:" + str(angle_sample) + '\n')
+# def make_hand_data_5p_angle(file_name):
+#     # Get lists of data windows for left/right hand taps
+#     lhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
+#                                                        LEFT_HAND)
+#     rhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
+#                                                        RIGHT_HAND)
+#
+#     # Get angles from linear accelerometer
+#     lhand_angles = []
+#     for tap_location_sample in lhand_p_samples_lin_acc:
+#         lhand_angles = lhand_angles + get_angle(tap_location_sample)
+#     rhand_angles = []
+#     for tap_location_sample in rhand_p_samples_lin_acc:
+#         rhand_angles = rhand_angles + get_angle(tap_location_sample)
+#
+#     # Write to training file
+#     with open("training/" + file_name + ".unscaled", 'w', encoding='utf-8') as \
+#             file:
+#         for angle_sample in lhand_angles:
+#             file.write("+1 1:" + str(angle_sample) + '\n')
+#         for angle_sample in rhand_angles:
+#             file.write("-1 1:" + str(angle_sample) + '\n')
 
 
 def make_hand_data_5p_combined(file_name):
@@ -1066,12 +1152,8 @@ def make_hand_data_5p_combined(file_name):
     :return:
     """
     # Get lists of data windows for left/right hand taps
-    lhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
-                                                       LEFT_HAND)
-    lhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, LEFT_HAND)
-    rhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
-                                                       RIGHT_HAND)
-    rhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, RIGHT_HAND)
+    [lhand_p_samples_lin_acc, lhand_p_samples_gyro] = get_positive_tap_samples(LEFT_HAND)
+    [rhand_p_samples_lin_acc, rhand_p_samples_gyro] = get_positive_tap_samples(RIGHT_HAND)
 
     # Angles not calculated in featurize() since only lin acc is relevant
     lhand_angles = []
@@ -1087,15 +1169,21 @@ def make_hand_data_5p_combined(file_name):
     rhand_lin_acc_features = featurize_combined(rhand_p_samples_lin_acc)
     rhand_gyro_features = featurize_combined(rhand_p_samples_gyro)
 
+    # Get pearson correlation coefficients
+    lhand_pearson_coeff = get_pearson_coeff(lhand_p_samples_lin_acc,
+                                            lhand_p_samples_gyro)
+    rhand_pearson_coeff = get_pearson_coeff(rhand_p_samples_lin_acc,
+                                            rhand_p_samples_gyro)
+
     lhand_features = []
     for i in range(len(lhand_lin_acc_features)):
         lhand_features.append([lhand_angles[i]] + lhand_lin_acc_features[i] +
-                              lhand_gyro_features[i])
+                              lhand_gyro_features[i] + lhand_pearson_coeff[i])
 
     rhand_features = []
     for i in range(len(rhand_lin_acc_features)):
         rhand_features.append([rhand_angles[i]] + rhand_lin_acc_features[i] +
-                              rhand_gyro_features[i])
+                              rhand_gyro_features[i] + rhand_pearson_coeff[i])
 
     # Now we write to the file.
     with open(
@@ -1121,9 +1209,7 @@ def make_left_hand_location_data(file_name):
     :return:
     """
     # Get positive and negative samples
-    lhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
-                                                       LEFT_HAND)
-    lhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, LEFT_HAND)
+    [lhand_p_samples_lin_acc, lhand_p_samples_gyro] = get_positive_tap_samples(LEFT_HAND)
 
     # First featurize positive samples for the left hand
     lin_acc_p_features = featurize(lhand_p_samples_lin_acc)
@@ -1138,6 +1224,7 @@ def make_left_hand_location_data(file_name):
     # Get pearson correlation coefficients
     lhand_pearson_coeff = get_pearson_coeff(lhand_p_samples_lin_acc,
                                             lhand_p_samples_gyro)
+
     # Synthesize positive tap features
     positive_features = []
     for i in range(len(lin_acc_p_features)):
@@ -1145,45 +1232,6 @@ def make_left_hand_location_data(file_name):
                                  lin_acc_p_features[i] +
                                  gyro_p_features[i] +
                                  lhand_pearson_coeff[i])
-
-    # Now we write to the file.
-    with open(
-            "training/" + file_name + ".unscaled", 'w', encoding='utf-8') as file:
-        location = 1
-        count = 1
-        feature_count = len(positive_features)
-        count_breakpoints = [int(feature_count * i / 5) for i in range(1, 6)]
-        for feature_vector in positive_features:
-            file.write(str(location) + " ")
-            for i in range(len(feature_vector)):
-                file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
-            file.write('\n')
-            if count in count_breakpoints:
-                location += 1
-            count += 1
-
-
-def make_left_hand_location_data_new(file_name):
-    """
-    Creates the data file for classifying tap position with the left hand in the
-    format:
-    <[tap location 1,...,5] <index1>:<x axis lin acc mean> ...
-    :param file_name: Name of training file to be written
-    :return:
-    """
-    # Get positive and negative samples
-    lhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
-                                                       LEFT_HAND)
-    lhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, LEFT_HAND)
-
-    # First featurize positive samples for the left hand
-    lin_acc_p_features = featurize_new(lhand_p_samples_lin_acc)
-    gyro_p_features = featurize_new(lhand_p_samples_gyro)
-
-    # Synthesize positive tap features
-    positive_features = []
-    for i in range(len(lin_acc_p_features)):
-        positive_features.append(lin_acc_p_features[i] + gyro_p_features[i])
 
     # Now we write to the file.
     with open(
@@ -1211,18 +1259,29 @@ def make_left_hand_location_data_combined(file_name):
     :return:
     """
     # Get positive and negative samples
-    lhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
-                                                       LEFT_HAND)
-    lhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, LEFT_HAND)
+    [lhand_p_samples_lin_acc, lhand_p_samples_gyro] = get_positive_tap_samples(LEFT_HAND)
 
     # First featurize positive samples for the left hand
     lin_acc_p_features = featurize_combined(lhand_p_samples_lin_acc)
     gyro_p_features = featurize_combined(lhand_p_samples_gyro)
 
+    # Angles not calculated in featurize() since only lin acc is relevant
+    lhand_angles = []
+    for tap_location_sample in lhand_p_samples_lin_acc:
+        lhand_angles = lhand_angles + get_angle(tap_location_sample)
+
+    # Pearson coefficients
+    # Get pearson correlation coefficients
+    lhand_pearson_coeff = get_pearson_coeff(lhand_p_samples_lin_acc,
+                                            lhand_p_samples_gyro)
+
     # Synthesize positive tap features
     positive_features = []
     for i in range(len(lin_acc_p_features)):
-        positive_features.append(lin_acc_p_features[i] + gyro_p_features[i])
+        positive_features.append([lhand_angles[i]] +
+                                 lin_acc_p_features[i] +
+                                 gyro_p_features[i] +
+                                 lhand_pearson_coeff[i])
 
     # Now we write to the file.
     with open(
@@ -1241,6 +1300,45 @@ def make_left_hand_location_data_combined(file_name):
             count += 1
 
 
+# def make_left_hand_location_data_new(file_name):
+#     """
+#     Creates the data file for classifying tap position with the left hand in the
+#     format:
+#     <[tap location 1,...,5] <index1>:<x axis lin acc mean> ...
+#     :param file_name: Name of training file to be written
+#     :return:
+#     """
+#     # Get positive and negative samples
+#     lhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
+#                                                        LEFT_HAND)
+#     lhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, LEFT_HAND)
+#
+#     # First featurize positive samples for the left hand
+#     lin_acc_p_features = featurize_new(lhand_p_samples_lin_acc)
+#     gyro_p_features = featurize_new(lhand_p_samples_gyro)
+#
+#     # Synthesize positive tap features
+#     positive_features = []
+#     for i in range(len(lin_acc_p_features)):
+#         positive_features.append(lin_acc_p_features[i] + gyro_p_features[i])
+#
+#     # Now we write to the file.
+#     with open(
+#             "training/" + file_name + ".unscaled", 'w', encoding='utf-8') as file:
+#         location = 1
+#         count = 1
+#         feature_count = len(positive_features)
+#         count_breakpoints = [int(feature_count * i / 5) for i in range(1, 6)]
+#         for feature_vector in positive_features:
+#             file.write(str(location) + " ")
+#             for i in range(len(feature_vector)):
+#                 file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
+#             file.write('\n')
+#             if count in count_breakpoints:
+#                 location += 1
+#             count += 1
+
+
 def make_right_hand_location_data(file_name):
     """
     Creates the data file for classifying tap position with the left hand in the
@@ -1250,9 +1348,7 @@ def make_right_hand_location_data(file_name):
     :return:
     """
     # Get positive and negative samples
-    rhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
-                                                       RIGHT_HAND)
-    rhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, RIGHT_HAND)
+    [rhand_p_samples_lin_acc, rhand_p_samples_gyro] = get_positive_tap_samples(RIGHT_HAND)
 
     # First featurize positive samples for the right hand
     lin_acc_p_features = featurize(rhand_p_samples_lin_acc)
@@ -1293,43 +1389,43 @@ def make_right_hand_location_data(file_name):
             count += 1
 
 
-def make_right_hand_location_data_new(file_name):
-    """
-    Creates the data file for classifying tap position with the left hand in the
-    format:
-    <[tap location 1,...,5] <index1>:<x axis lin acc mean> ...
-    :param file_name: Name of training file to be written
-    :return:
-    """
-    # Get positive and negative samples
-    rhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
-                                                       RIGHT_HAND)
-    rhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, RIGHT_HAND)
-
-    # First featurize positive samples for the right hand
-    lin_acc_p_features = featurize_new(rhand_p_samples_lin_acc)
-    gyro_p_features = featurize_new(rhand_p_samples_gyro)
-
-    # Synthesize positive tap features
-    positive_features = []
-    for i in range(len(lin_acc_p_features)):
-        positive_features.append(lin_acc_p_features[i] + gyro_p_features[i])
-
-    # Now we write to the file.
-    with open(
-            "training/" + file_name + ".unscaled", 'w', encoding='utf-8') as file:
-        location = 1
-        count = 1
-        feature_count = len(positive_features)
-        count_breakpoints = [int(feature_count * i / 5) for i in range(1, 6)]
-        for feature_vector in positive_features:
-            file.write(str(location) + " ")
-            for i in range(len(feature_vector)):
-                file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
-            file.write('\n')
-            if count in count_breakpoints:
-                location += 1
-            count += 1
+# def make_right_hand_location_data_new(file_name):
+#     """
+#     Creates the data file for classifying tap position with the left hand in the
+#     format:
+#     <[tap location 1,...,5] <index1>:<x axis lin acc mean> ...
+#     :param file_name: Name of training file to be written
+#     :return:
+#     """
+#     # Get positive and negative samples
+#     rhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
+#                                                        RIGHT_HAND)
+#     rhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, RIGHT_HAND)
+#
+#     # First featurize positive samples for the right hand
+#     lin_acc_p_features = featurize_new(rhand_p_samples_lin_acc)
+#     gyro_p_features = featurize_new(rhand_p_samples_gyro)
+#
+#     # Synthesize positive tap features
+#     positive_features = []
+#     for i in range(len(lin_acc_p_features)):
+#         positive_features.append(lin_acc_p_features[i] + gyro_p_features[i])
+#
+#     # Now we write to the file.
+#     with open(
+#             "training/" + file_name + ".unscaled", 'w', encoding='utf-8') as file:
+#         location = 1
+#         count = 1
+#         feature_count = len(positive_features)
+#         count_breakpoints = [int(feature_count * i / 5) for i in range(1, 6)]
+#         for feature_vector in positive_features:
+#             file.write(str(location) + " ")
+#             for i in range(len(feature_vector)):
+#                 file.write(str(i + 1) + ":" + str(feature_vector[i]) + " ")
+#             file.write('\n')
+#             if count in count_breakpoints:
+#                 location += 1
+#             count += 1
 
 
 def make_right_hand_location_data_combined(file_name):
@@ -1341,18 +1437,29 @@ def make_right_hand_location_data_combined(file_name):
     :return:
     """
     # Get positive and negative samples
-    rhand_p_samples_lin_acc = get_positive_tap_samples(LINEAR_ACCELEROMETER,
-                                                       RIGHT_HAND)
-    rhand_p_samples_gyro = get_positive_tap_samples(GYROSCOPE, RIGHT_HAND)
+    [rhand_p_samples_lin_acc, rhand_p_samples_gyro] = get_positive_tap_samples(RIGHT_HAND)
 
     # First featurize positive samples for the right hand
     lin_acc_p_features = featurize_combined(rhand_p_samples_lin_acc)
     gyro_p_features = featurize_combined(rhand_p_samples_gyro)
 
+    # Angles not calculated in featurize() since only lin acc is relevant
+    rhand_angles = []
+    for tap_location_sample in rhand_p_samples_lin_acc:
+        rhand_angles = rhand_angles + get_angle(tap_location_sample)
+
+    # Pearson coefficients
+    # Get pearson correlation coefficients
+    rhand_pearson_coeff = get_pearson_coeff(rhand_p_samples_lin_acc,
+                                            rhand_p_samples_gyro)
+
     # Synthesize positive tap features
     positive_features = []
     for i in range(len(lin_acc_p_features)):
-        positive_features.append(lin_acc_p_features[i] + gyro_p_features[i])
+        positive_features.append([rhand_angles[i]] +
+                                 lin_acc_p_features[i] +
+                                 gyro_p_features[i] +
+                                 rhand_pearson_coeff[i])
 
     # Now we write to the file.
     with open(

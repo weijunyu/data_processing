@@ -6,6 +6,11 @@ from training_functions import get_l1_norm
 from training_functions import get_inf_norm
 from training_functions import get_fro_norm
 from training_functions import get_angle
+from training_functions import get_sample_rms
+from training_functions import get_sample_p2p
+from training_functions import get_sample_min
+from training_functions import get_sample_max
+
 from training_functions import featurize
 
 from scipy import stats
@@ -97,11 +102,17 @@ print(get_sample_mean(lin_acc_sample))
 print(get_sample_std_dev(lin_acc_sample))
 print(get_sample_skew(lin_acc_sample))
 print(get_sample_kurtosis(lin_acc_sample))
+
+print(get_sample_rms(lin_acc_sample))
+print(get_sample_p2p(lin_acc_sample))
+print(get_sample_min(lin_acc_sample))
+print(get_sample_max(lin_acc_sample))
+
 print(get_l1_norm(lin_acc_sample))
 print(get_inf_norm(lin_acc_sample))
 print(get_fro_norm(lin_acc_sample))
 print(test_get_pearsonr(lin_acc_sample, gyro_sample))
-# print(get_angle(lin_acc_sample))
+print(get_angle(lin_acc_sample))
 
 # print(featurize([lin_acc_sample]))
 

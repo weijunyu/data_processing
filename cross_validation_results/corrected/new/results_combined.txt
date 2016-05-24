@@ -1,0 +1,8 @@
+'hand_5p.scaled'
+[1.875, -1.5, 93.3333]
+'location_lhand.scaled'
+[1.3125, -3.1875, 89.7222]
+'location_rhand.scaled'
+[3.5625, -4.3125, 86.1111]
+'tap_occurrence.scaled'
+[2.4375, -4.3125, 98.75]
